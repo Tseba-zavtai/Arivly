@@ -19,6 +19,26 @@ test('real PostgreSQL: grants, replay protection, ownership checks, rollback and
     await db.exec(fs.readFileSync('supabase/migrations/20261030000000_store_purchases.sql', 'utf8'));
     await db.exec(fs.readFileSync('supabase/migrations/20261102000000_store_refund_inbox.sql', 'utf8'));
     await db.exec(fs.readFileSync('supabase/migrations/20261102000100_store_refund_entitlements.sql', 'utf8'));
+    await db.exec(fs.readFileSync('supabase/migrations/20261104000000_store_verification_diagnostics.sql', 'utf8'));
+    await t.test('payment tables enforce the intended PostgreSQL privileges', async () => {
+      const expected = {
+        store_purchase_intents: ['SELECT', 'INSERT'],
+        store_purchase_receipts: ['SELECT', 'INSERT'],
+        store_refund_events: ['SELECT', 'INSERT', 'UPDATE'],
+        store_credit_lots: ['SELECT', 'INSERT', 'UPDATE'],
+        store_verification_diagnostics: ['SELECT', 'INSERT'],
+      };
+      for (const [table, allowed] of Object.entries(expected)) {
+        const { rows: [relation] } = await db.query('select relrowsecurity from pg_class where oid = $1::regclass', [`public.${table}`]);
+        assert.equal(relation.relrowsecurity, true, table);
+        for (const role of ['anon', 'authenticated', 'service_role']) {
+          const { rows } = await db.query(`select privilege, has_table_privilege($1, $2, privilege) as granted
+            from unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE']) as privilege`, [role, `public.${table}`]);
+          assert.deepEqual(rows.filter(row => row.granted).map(row => row.privilege),
+            role === 'service_role' ? allowed : [], `${table} ${role}`);
+        }
+      }
+    });
     const prepare = async (sku, user = uid, target = null) => (await db.query('select prepare_store_purchase($1,$2,$3,$4) id', [user, 'ios', sku, target])).rows[0].id;
     const grant = async (intent, sku, tx, user = uid) => (await db.query('select grant_verified_store_purchase($1,$2,$3,$4,$5,$6,now()) result', [user, intent, 'ios', sku, tx, 'Production'])).rows[0].result;
     const credit = 'mn.tureestei.app.credit2', bump = 'mn.tureestei.app.Pump';

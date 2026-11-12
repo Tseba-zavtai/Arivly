@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useJobs } from "@/contexts/JobsContext";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRootNavigationState, useRouter } from "expo-router";
 import * as Location from "expo-location";
 import { File } from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -121,7 +121,8 @@ async function uriToArrayBuffer(uri: string): Promise<ArrayBuffer> {
 export default function PostScreen() {
   const { addJob } = useJobs();
   const router = useRouter();
-  const { isAuthenticated, user, refetchProfile } = useAuth() as any;
+  const rootNavigationKey = useRootNavigationState()?.key;
+  const { isAuthenticated, isLoading: isAuthLoading, user, refetchProfile } = useAuth() as any;
   const { colors } = useTheme();
 
   const postType = "job"; 
@@ -256,7 +257,14 @@ export default function PostScreen() {
     })();
   }, []);
 
-  useEffect(() => { if (!isAuthenticated) { router.push("/auth"); } }, [isAuthenticated, router]);
+  useEffect(() => {
+    if (isAuthenticated) return;
+    if (Platform.OS === 'web') {
+      if (rootNavigationKey && !isAuthLoading) router.replace('/auth');
+      return;
+    }
+    router.push('/auth');
+  }, [isAuthenticated, isAuthLoading, rootNavigationKey, router]);
 
   const handleMapPress = async (event: any) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;

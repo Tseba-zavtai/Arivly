@@ -18,12 +18,13 @@ import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import AndroidLaunchBrand from "@/components/AndroidLaunchBrand";
 import { StorePurchaseProvider } from "@/contexts/StorePurchaseContext";
+import StoreUpdatePrompt from "@/components/StoreUpdatePrompt";
 
 const queryClient = new QueryClient();
 
 void SystemUI.setBackgroundColorAsync("#FFE3DD").catch(() => {});
 
-Notifications.setNotificationHandler({
+if (Platform.OS !== 'web') Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
@@ -34,6 +35,7 @@ Notifications.setNotificationHandler({
 });
 
 async function registerForPushNotificationsAsync() {
+  if (Platform.OS === 'web') return;
   let token;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -72,6 +74,7 @@ async function registerForPushNotificationsAsync() {
 
 function useNotificationObserver() {
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const openNotificationTarget = (notification: Notifications.Notification) => {
       const url = notification.request.content.data?.url;
       if (typeof url === "string" && url.startsWith("/")) {
@@ -178,6 +181,7 @@ export default function RootLayout() {
                 <StorePurchaseProvider>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                   <RootLayoutNav />
+                  <StoreUpdatePrompt />
                   <AppLockGate />
                   <AccountSuspendedGate />
                   <AndroidLaunchBrand />

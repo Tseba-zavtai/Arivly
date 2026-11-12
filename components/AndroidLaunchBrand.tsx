@@ -11,7 +11,7 @@ export default function AndroidLaunchBrand() {
   }, []);
   if (!visible) return null;
   return (
-    <View style={styles.cover} accessibilityLabel="Tureesly">
+    <View style={styles.cover} accessibilityLabel="Arivly">
       <Image source={require('@/assets/logos/Logo-dark.png')} style={styles.logo} resizeMode="contain" />
     </View>
   );

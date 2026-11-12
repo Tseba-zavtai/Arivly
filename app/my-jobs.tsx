@@ -73,8 +73,10 @@ export default function MyJobsScreen() {
         finally {setLoadingId(null);}
       }}]);
   };
+  const canPromote = (job: any) => !isListingExpired(job) && job.is_active !== false && !(Number(job.available_quantity) <= 0);
+  const promotionDisabled = !!loadingId || selected.length === 0 || ownedJobs.some(j => selected.includes(j.id) && !canPromote(j));
   const pay = (type:'bump'|'sponsor',ids=selected) => {
-    const invalid=ownedJobs.filter(j=>ids.includes(j.id) && (isListingExpired(j)||j.is_active===false||Number(j.available_quantity)<=0));
+    const invalid=ownedJobs.filter(j=>ids.includes(j.id) && !canPromote(j));
     if(invalid.length) {Alert.alert('Төлбөр үүсгэх боломжгүй',`${invalid.length} зар хугацаа дууссан, идэвхгүй эсвэл сул үлдэгдэлгүй байна. Эхлээд зарын төлөвөө шалгана уу.`);return;}
     router.push({pathname:'/sponsor-payment',params:{jobIds:ids.join(','),targetType:type}});
   };
@@ -166,6 +168,7 @@ export default function MyJobsScreen() {
             const img = job.image_urls?.[0] || job.image_url;
             const imgCount = job.image_urls?.length || 0;
             const isActive = job.is_active !== false && !isListingExpired(job);
+            const promotionUnavailable = !canPromote(job) || !!loadingId;
             const rating = job.itemRatingAvg || job.item_rating_avg || 0;
             const reviewCount = job.itemReviewCount || job.item_review_count || 0;
             const rentalCount = job.rentalCount || job.rental_count || 0;
@@ -235,12 +238,14 @@ export default function MyJobsScreen() {
 
                 {/* 🎯 BUMP ТОВЧ (QPay рүү үсэрнэ) */}
                 <TouchableOpacity 
-                  style={[styles.fullBtn, { borderColor: colors.border }]} 
+                  style={[styles.fullBtn, { borderColor: colors.border }, promotionUnavailable && { backgroundColor: '#E5E7EB', opacity: 0.5 }]}
+                  disabled={promotionUnavailable}
+                  accessibilityState={{ disabled: promotionUnavailable }}
                   onPress={() => pay('bump',[job.id])}
                   activeOpacity={0.7}
                 >
                   <TrendingUp size={16} color={colors.text} />
-                  <Text style={[styles.fullBtnText, { color: colors.text }]}>Зараа дээш гаргах (1,000₮)</Text>
+                  <Text style={[styles.fullBtnText, { color: colors.text }]}>Зараа дээш гаргах</Text>
                 </TouchableOpacity>
 
                 {/* SPONSOR ХЭСЭГ */}
@@ -256,7 +261,9 @@ export default function MyJobsScreen() {
                   </View>
                 ) : (
                   <TouchableOpacity 
-                    style={[styles.fullBtn, { backgroundColor: "#6D28D9", borderColor: "#6D28D9" }]} 
+                    style={[styles.fullBtn, { backgroundColor: promotionUnavailable ? '#9CA3AF' : '#6D28D9', borderColor: promotionUnavailable ? '#9CA3AF' : '#6D28D9' }]}
+                    disabled={promotionUnavailable}
+                    accessibilityState={{ disabled: promotionUnavailable }}
                     onPress={() => pay('sponsor',[job.id])}
                     activeOpacity={0.8}
                   >
@@ -278,10 +285,10 @@ export default function MyJobsScreen() {
         </View>
         {selected.length===0 ? <Text style={{color:colors.textSecondary}}>Үйлдэл хийх заруудаа чагтлаарай.</Text> : <>
           <View style={styles.bulkRow}>
-            <TouchableOpacity accessibilityRole="button" disabled={!!loadingId} onPress={()=>pay('bump')} style={[styles.bulkButton,styles.bulkPrimary,loadingId&&styles.bulkDisabled]}>
-              <TrendingUp size={18} color="#fff" /><Text style={styles.bulkPrimaryText}>Pump · {(selected.length*1000).toLocaleString()}₮</Text>
+            <TouchableOpacity accessibilityRole="button" disabled={promotionDisabled} accessibilityState={{disabled:promotionDisabled}} onPress={()=>pay('bump')} style={[styles.bulkButton,styles.bulkPrimary,promotionDisabled&&{backgroundColor:'#9CA3AF',borderColor:'#9CA3AF'}]}>
+              <TrendingUp size={18} color="#fff" /><Text style={styles.bulkPrimaryText}>Зараа дээш гаргах</Text>
             </TouchableOpacity>
-            <TouchableOpacity accessibilityRole="button" disabled={!!loadingId} onPress={()=>pay('sponsor')} style={[styles.bulkButton,styles.bulkPrimary,loadingId&&styles.bulkDisabled]}>
+            <TouchableOpacity accessibilityRole="button" disabled={promotionDisabled} accessibilityState={{disabled:promotionDisabled}} onPress={()=>pay('sponsor')} style={[styles.bulkButton,styles.bulkPrimary,promotionDisabled&&{backgroundColor:'#9CA3AF',borderColor:'#9CA3AF'}]}>
               <Award size={18} color="#fff" /><Text style={styles.bulkPrimaryText}>Sponsored</Text>
             </TouchableOpacity>
           </View>

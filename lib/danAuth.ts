@@ -74,7 +74,7 @@ export async function authenticateWithDan(mode: DanMode, options?: { termsAccept
       throw new Error("Энэ DAN иргэн өмнө нь бүртгүүлсэн байна. Утасны дугаар, нууц үгээрээ нэвтэрнэ үү.");
     }
     if (errorCode === "identity_not_linked") {
-      throw new Error("Энэ DAN иргэн Tureesly account-тай хараахан холбогдоогүй байна. Өмнөх account-аараа нэвтэрч Profile → DAN-аар баталгаажуулахыг сонгоно уу.");
+      throw new Error("Энэ DAN иргэн Arivly account-тай хараахан холбогдоогүй байна. Өмнөх account-аараа нэвтэрч Profile → DAN-аар баталгаажуулахыг сонгоно уу.");
     }
     throw new Error("DAN нэвтрэх амжилтгүй боллоо. Дахин оролдоно уу.");
   }
@@ -117,7 +117,7 @@ export async function finishDanSignUp(phone: string, password: string) {
     const code = data?.error ?? (await error?.context?.json?.().catch(() => null))?.error;
     if (code === "invalid_phone") throw new Error("8 оронтой утасны дугаар оруулна уу.");
     if (code === "weak_password") throw new Error("Нууц үг 6-аас дээш тэмдэгттэй байна.");
-    if (code === "phone_already_in_use") throw new Error("Энэ утасны дугаар өөр Tureesly бүртгэл дээр ашиглагдаж байна.");
+    if (code === "phone_already_in_use") throw new Error("Энэ утасны дугаар өөр Arivly бүртгэл дээр ашиглагдаж байна.");
     if (code === "terms_acceptance_required") throw new Error("Үйлчилгээний нөхцөлийг эхлээд зөвшөөрнө үү.");
     if (code === "onboarding_already_completed") throw new Error("Бүртгэл аль хэдийн дууссан байна. Аппаа дахин нээгээд нэвтэрнэ үү.");
     if (code === "authentication_required") throw new Error("Нэвтрэх хугацаа дууссан байна. DAN-аар дахин нэвтэрч бүртгэлээ үргэлжлүүлнэ үү.");

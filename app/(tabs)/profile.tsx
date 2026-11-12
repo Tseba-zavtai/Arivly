@@ -36,7 +36,7 @@ import {
   Briefcase,
 
 } from "lucide-react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRootNavigationState, useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { useJobs } from "@/contexts/JobsContext";
 import { useCallback, useMemo, useEffect, useState } from "react";
@@ -64,11 +64,13 @@ const SHOW_LEGACY_PASSWORD_CHANGE = false;
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const rootNavigationKey = useRootNavigationState()?.key;
   const { jobs } = useJobs() as any;
   const {
     user,
     logout,
     isAuthenticated,
+    isLoading: isAuthLoading,
     updateProfile,
     isSuperAdmin,
     unlockAdmin,
@@ -100,6 +102,7 @@ export default function ProfileScreen() {
   const [pwShow, setPwShow] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false); 
+  const [failedAvatarUri, setFailedAvatarUri] = useState<string>();
   const [isLinkingDan, setIsLinkingDan] = useState(false);
   const [isChangingAppLock, setIsChangingAppLock] = useState(false);
 
@@ -150,8 +153,9 @@ export default function ProfileScreen() {
   }, [myJobs, user]);
 
   useEffect(() => {
+    if (Platform.OS === 'web' && (!rootNavigationKey || isAuthLoading)) return;
     if (!isAuthenticated) router.replace("/auth");
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isAuthLoading, rootNavigationKey, router]);
 
   useEffect(() => {
     refetchProfile?.().catch(() => {});
@@ -410,12 +414,16 @@ export default function ProfileScreen() {
       {/* 🎯 ЗАССАН: Хуучин гараар зурсан толгойг устгаад, showBack={false} гээд дуудав */}
       <AppHeader title="Профайл" showBack={false} />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.contentContainer, Platform.OS === "web" && styles.webContentContainer]}
+      >
         
         <View style={[styles.profileCard, { backgroundColor: colors.background }]}>
           <TouchableOpacity onPress={pickImage} activeOpacity={0.8} disabled={isUploadingImage}>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-              {isUploadingImage ? <ActivityIndicator color={colors.buttonText} /> : user?.photoUri ? <Image source={{ uri: user.photoUri }} style={styles.avatarImage} /> : <User size={40} color={colors.buttonText} strokeWidth={2} />}
+              {isUploadingImage ? <ActivityIndicator color={colors.buttonText} /> : user?.photoUri && user.photoUri !== failedAvatarUri ? <Image source={{ uri: user.photoUri }} style={styles.avatarImage} onError={() => setFailedAvatarUri(user.photoUri)} /> : <User size={40} color={colors.buttonText} strokeWidth={2} />}
               <View style={[styles.cameraIcon, { backgroundColor: colors.primary, borderColor: colors.background }]}><Camera size={16} color={colors.buttonText} /></View>
             </View>
           </TouchableOpacity>
@@ -708,6 +716,7 @@ const styles = StyleSheet.create({
   // 🎯 ЗАССАН: Хуучин хуудасны header стилиудийг устгав
   content: { flex: 1 },
   contentContainer: { paddingTop: 20 },
+  webContentContainer: { width: "100%", maxWidth: 760, alignSelf: "center" },
   profileCard: { marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: "row", alignItems: "center", marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: "#E5E7EB", gap: 16 },
   avatar: { width: 70, height: 70, borderRadius: 35, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   avatarImage: { width: 70, height: 70 },

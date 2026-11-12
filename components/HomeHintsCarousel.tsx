@@ -24,7 +24,7 @@ export default function HomeHintsCarousel() {
   const list = useRef<FlatList<(typeof HINTS)[number]>>(null);
   return (
     <View style={styles.section}>
-      <Text accessibilityRole="header" style={[styles.heading, { color: colors.text }]}>Tureesly-г ашиглахын давуу тал</Text>
+      <Text accessibilityRole="header" style={[styles.heading, { color: colors.text }]}>Arivly-г ашиглахын давуу тал</Text>
       <View style={[styles.card, { width, height: cardHeight }]}>
         {width > 0 ? (
           <FlatList

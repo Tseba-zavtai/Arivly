@@ -137,6 +137,8 @@ export default function HelpScreen() {
                 <View key={faq.id} style={[styles.faqItem, index !== faqs.length - 1 && styles.rowBorder]}>
                   <Pressable 
                     onPress={() => setExpandedIndex(isExpanded ? null : index)} 
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: isExpanded }}
                     style={styles.faqQuestionRow}
                   >
                     <Text style={styles.faqQuestionText}>{faq.question}</Text>
@@ -158,7 +160,7 @@ export default function HelpScreen() {
           )}
         </View>
 
-        <Text style={styles.footer}>© Tureesly</Text>
+        <Text style={styles.footer}>© Arivly</Text>
       </ScrollView>
     </SafeAreaView>
   );

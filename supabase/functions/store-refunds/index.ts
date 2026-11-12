@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { Environment, SignedDataVerifier } from 'npm:@apple/app-store-server-library@2.0.0';
+import { Environment } from 'npm:@apple/app-store-server-library@2.0.0';
+import { AppleEdgeVerifier as SignedDataVerifier } from '../store-purchases/apple-edge-verifier.ts';
 import { Buffer } from 'node:buffer';
 import { BUNDLE_ID, checkStoreCredentials, googleAccessToken, required } from '../store-purchases/verification.ts';
 

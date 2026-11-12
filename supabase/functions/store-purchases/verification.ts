@@ -1,4 +1,5 @@
-import { Environment, SignedDataVerifier } from 'npm:@apple/app-store-server-library@2.0.0';
+import { Environment } from 'npm:@apple/app-store-server-library@2.0.0';
+import { AppleEdgeVerifier as SignedDataVerifier, EdgeCertificate } from './apple-edge-verifier.ts';
 import { SignJWT, importPKCS8 } from 'npm:jose@5.9.6';
 
 export const BUNDLE_ID = 'mn.tureestei.app';
@@ -119,6 +120,15 @@ export async function checkStoreCredentials(): Promise<Record<string, boolean | 
   const roots: string[] = JSON.parse(required('APPLE_IAP_ROOT_CERTS_BASE64'));
   if (!Array.isArray(roots) || !roots.length) throw new Error('STORE_NOT_CONFIGURED');
   const { Buffer } = await import('node:buffer');
+  // Public self-signed Apple root: exercise the actual Edge certificate primitive without a purchase.
+  let appleCertificatePrimitiveReady = false, appleCertificatePrimitiveError = '';
+  try {
+    const rootProbe = new EdgeCertificate(Buffer.from(roots[roots.length - 1], 'base64'));
+    appleCertificatePrimitiveReady = rootProbe.verify(rootProbe.publicKey);
+  } catch (error) {
+    const e = error as { message?: string; code?: string };
+    appleCertificatePrimitiveError = String(e.message ?? '').match(/(?:crypto\.)?X509Certificate[\w.]*/)?.[0] ?? String(e.code ?? 'CERTIFICATE_RUNTIME_ERROR');
+  }
   const appId = Number(required('APPLE_IAP_APP_ID'));
   if (!Number.isSafeInteger(appId) || appId <= 0) throw new Error('STORE_NOT_CONFIGURED');
   new SignedDataVerifier(roots.map(root => Buffer.from(root,'base64')), true, Environment.PRODUCTION, BUNDLE_ID, appId);
@@ -155,7 +165,7 @@ export async function checkStoreCredentials(): Promise<Record<string, boolean | 
   });
   const purchaseBody=await purchaseProbe.json().catch(()=>null);
   const googlePurchaseReason=String(purchaseBody?.error?.status ?? purchaseBody?.error?.errors?.[0]?.reason ?? '').slice(0,80);
-  return { appleAuthenticated, appleStatus, appleApiError, appleLocalError, appleLocalCode, appleSandboxAuthenticated, appleSandboxStatus, googleAccountMatches, googleAuthenticated:google.ok, googleStatus:google.status, googleReason, googlePurchaseStatus:purchaseProbe.status, googlePurchaseReason, appleRootsConfigured:true };
+  return { appleCertificatePrimitiveReady, appleCertificatePrimitiveError, appleAuthenticated, appleStatus, appleApiError, appleLocalError, appleLocalCode, appleSandboxAuthenticated, appleSandboxStatus, googleAccountMatches, googleAuthenticated:google.ok, googleStatus:google.status, googleReason, googlePurchaseStatus:purchaseProbe.status, googlePurchaseReason, appleRootsConfigured:true };
 }
 
 export async function verifyGoogle(token: string, productId: string, userId: string): Promise<VerifiedPurchase> {

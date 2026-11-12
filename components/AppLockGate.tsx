@@ -27,7 +27,7 @@ export default function AppLockGate() {
         <View style={[styles.icon, { backgroundColor: colors.background }]}>
           <LockKeyhole size={34} color={colors.primary} />
         </View>
-        <Text style={[styles.title, { color: colors.buttonText }]}>Tureesly түгжээтэй байна</Text>
+        <Text style={[styles.title, { color: colors.buttonText }]}>Arivly түгжээтэй байна</Text>
         <Text style={[styles.subtitle, { color: colors.buttonText }]}>Face ID, хурууны хээ эсвэл төхөөрөмжийн PIN-ээр нээнэ үү.</Text>
         <TouchableOpacity style={[styles.button, { backgroundColor: colors.background }]} onPress={handleUnlock} disabled={busy} activeOpacity={0.85}>
           {busy ? <ActivityIndicator color={colors.primary} /> : <><ShieldCheck size={19} color={colors.primary} /><Text style={[styles.buttonText, { color: colors.primary }]}>Нээх</Text></>}

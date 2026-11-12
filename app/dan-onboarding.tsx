@@ -48,7 +48,7 @@ export default function DanOnboardingScreen() {
     setSaving(true);
     try {
       await completeDanSignup(`+976${phone}`, password);
-      Alert.alert("Бүртгэл амжилттай", "Tureesly бүртгэл тань бэлэн боллоо.", [
+      Alert.alert("Бүртгэл амжилттай", "Arivly бүртгэл тань бэлэн боллоо.", [
         { text: "Үргэлжлүүлэх", onPress: () => router.replace("/(tabs)") },
       ]);
     } catch (error: any) {
@@ -67,7 +67,7 @@ export default function DanOnboardingScreen() {
           </View>
           <Text style={[styles.title, { color: colors.text }]}>Бүртгэлээ дуусгана уу</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            DAN-аар танигдлаа. Одоо нэвтрэх утас болон Tureesly нууц үгээ нэг удаа тохируулна уу.
+            DAN-аар танигдлаа. Одоо нэвтрэх утас болон Arivly нууц үгээ нэг удаа тохируулна уу.
           </Text>
 
           <View style={styles.form}>
@@ -91,7 +91,7 @@ export default function DanOnboardingScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.text }]}>Tureesly нууц үг</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Arivly нууц үг</Text>
               <View style={styles.passwordWrap}>
                 <TextInput
                   value={password}

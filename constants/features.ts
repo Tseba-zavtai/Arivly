@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 /**
  * Release switches for features that are already implemented but not ready for
  * public use. Keep the data/schema in place so the feature can be enabled
@@ -5,6 +7,5 @@
  */
 export const RENTAL_INSURANCE_ENABLED = false;
 
-// Owner-requested dual-payment variant. This is NOT store-policy approval.
-// Static, review-visible switch: never change payment availability based on reviewer identity.
-export const NATIVE_QPAY_ENABLED = true;
+// iOS uses App Store checkout; Android retains the QPay option.
+export const NATIVE_QPAY_ENABLED = Platform.OS === 'android';

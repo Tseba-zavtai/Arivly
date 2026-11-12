@@ -738,7 +738,7 @@ export default function RentalRequestsScreen() {
                   </View>
 
                   <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
-                    Барьцааны дүн, түрээсийн нөхцөлийг баталгаажуулна. Барьцааг Tureesly автоматаар татахгүй; талууд биечлэн төлбөр, хүлээлцэх нөхцөлөө тохиролцоно.
+                    Барьцааны дүн, түрээсийн нөхцөлийг баталгаажуулна. Барьцааг Arivly автоматаар татахгүй; талууд биечлэн төлбөр, хүлээлцэх нөхцөлөө тохиролцоно.
                   </Text>
 
                   <View style={styles.inputLabelRow}>
@@ -778,7 +778,7 @@ export default function RentalRequestsScreen() {
                       {agreeTerms ? <CheckSquare size={20} color="#00B45A" /> : <Square size={20} color={colors.textSecondary} />}
                       <Text style={[styles.termsTitle, { color: agreeTerms ? '#00B45A' : colors.text }]}>Гэрээ, хариуцлагын нөхцөлийг зөвшөөрөх</Text>
                     </View>
-                    <Text style={[styles.termsDescText, { color: colors.textSecondary }]}>Энэ баталгаажуулалт нь барьцаа, барааны тоо, хугацаа болон нийт түрээсийн дүнг тухайн хүсэлтэд тогтоож үлдээнэ. Tureesly нь барьцааг одоохондоо хүлээн авч, хадгалахгүй.</Text>
+                    <Text style={[styles.termsDescText, { color: colors.textSecondary }]}>Энэ баталгаажуулалт нь барьцаа, барааны тоо, хугацаа болон нийт түрээсийн дүнг тухайн хүсэлтэд тогтоож үлдээнэ. Arivly нь барьцааг одоохондоо хүлээн авч, хадгалахгүй.</Text>
                   </TouchableOpacity>
 
                   <View style={styles.modalActions}>
@@ -821,7 +821,7 @@ export default function RentalRequestsScreen() {
                 <Text style={[styles.agreementPreviewText, { color: colors.textSecondary }]}>Түрээсийн нийт дүн: {Number(agreementTerms.rental_total ?? agreementRequest?.total_price ?? 0).toLocaleString()} ₮</Text>
                 <Text style={[styles.agreementPreviewDeposit, { color: colors.primary }]}>Барьцаа: {Number(agreementTerms.deposit_amount ?? agreementRequest?.deposit_amount ?? 0).toLocaleString()} ₮</Text>
               </View>
-              <Text style={[styles.termsDescText, { color: colors.textSecondary }]}>Барьцааг Tureesly автоматаар хүлээн авахгүй. Талууд бодит төлбөр, бараа хүлээлцэх баримтаа өөрсдөө тохиролцож хадгална.</Text>
+              <Text style={[styles.termsDescText, { color: colors.textSecondary }]}>Барьцааг Arivly автоматаар хүлээн авахгүй. Талууд бодит төлбөр, бараа хүлээлцэх баримтаа өөрсдөө тохиролцож хадгална.</Text>
               <View style={[styles.modalActions, { marginTop: 20 }]}>
                 <TouchableOpacity style={[styles.modalCancelButton, { borderColor: colors.border }]} onPress={() => setAgreementModalVisible(false)} disabled={busyId !== null}>
                   <Text style={[styles.modalCancelText, { color: colors.text }]}>Болих</Text>

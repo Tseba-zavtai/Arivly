@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   Share,
 } from "react-native";
-import { Image } from "expo-image";
+import Image from "@/components/ListingImage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -47,6 +47,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { RENTAL_INSURANCE_ENABLED } from "@/constants/features";
 import AppHeader from "@/components/AppHeader"; 
+import JobDetailFrame from "@/components/JobDetailFrame";
 import ContactPhonePickerModal from "@/components/ContactPhonePickerModal";
 import ListingGridCard from "@/components/ListingGridCard";
 import { getSimilarListings } from "@/lib/similarListings";
@@ -198,8 +199,9 @@ export default function JobDetailScreen() {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
+        <JobDetailFrame>
         <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]} edges={["bottom"]}>
-          <AppHeader title="Зарын дэлгэрэнгүй" />
+          {Platform.OS !== "web" && <AppHeader title="Зарын дэлгэрэнгүй" />}
           <View style={styles.notFound}>
             <Text style={[styles.notFoundText, { color: colors.text }]}>Зар олдсонгүй</Text>
             <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.primary }]} activeOpacity={0.8}>
@@ -207,6 +209,7 @@ export default function JobDetailScreen() {
             </TouchableOpacity>
           </View>
         </SafeAreaView>
+        </JobDetailFrame>
       </>
     );
   }
@@ -264,10 +267,10 @@ export default function JobDetailScreen() {
       const priceText = jobPrice > 0 ? `${jobPrice.toLocaleString()} ₮ / ${priceTypeLabel}` : "Үнэ тохиролцоно";
       const titleText = job.title || job.subcategory || job.category || "Зар";
       const deepLink = ExpoLinking.createURL(`/job-detail`, { queryParams: { id: job.id } });
-      const shareMessage = `Tureesly дээрх энэ зарыг сонирхоод үзээрэй!\n\n🔹 ${titleText}\n💰 Үнэ: ${priceText}\n\n👇 Яг одоо энд дарж дэлгэрэнгүйг харна уу:\n${deepLink}`;
+      const shareMessage = `Arivly дээрх энэ зарыг сонирхоод үзээрэй!\n\n🔹 ${titleText}\n💰 Үнэ: ${priceText}\n\n👇 Яг одоо энд дарж дэлгэрэнгүйг харна уу:\n${deepLink}`;
       await Share.share({ 
         message: shareMessage, 
-        title: "Tureesly - Түрээсийн нэгдсэн платформ" 
+        title: "Arivly - Түрээсийн нэгдсэн платформ"
       });
     } catch (error) { console.log("Share error:", error); }
   };
@@ -410,7 +413,7 @@ export default function JobDetailScreen() {
       if (requestData) {
         const { error: inAppNotificationError } = await supabase.from("notifications").insert([
           {
-            user_id: postedBy?.id,
+            user_id: requestData.owner_id,
             title: "Шинэ түрээсийн хүсэлт",
             content: `${user?.name || "Хэрэглэгч"} таны ${job.title || "бараа"}-г түрээслэх хүсэлт илгээлээ.`,
             is_read: false,
@@ -433,59 +436,57 @@ export default function JobDetailScreen() {
       }
 
       setInsuranceModalVisible(false);
-      Alert.alert("Амжилттай", "Түрээслэх хүсэлт илгээгдлээ. Зарын эзэн зөвшөөрөх үед танд мэдэгдэл очино.", [{ text: "ОК", onPress: () => router.replace("/(tabs)") }]);
-    } catch (e: any) { Alert.alert("Алдаа", e?.message ?? "Түрээслэх хүсэлт илгээхөд алдаа гарлаа"); } finally { setRentSubmitting(false); }
+      const message = "Түрээслэх хүсэлт илгээгдлээ. Зарын эзэн зөвшөөрөх үед танд мэдэгдэл очино.";
+      if (Platform.OS === 'web') window.alert(message);
+      else Alert.alert("Амжилттай", message, [{ text: "ОК", onPress: () => router.replace("/(tabs)") }]);
+    } catch (e: any) {
+      const message = e?.message ?? "Түрээслэх хүсэлт илгээхэд алдаа гарлаа";
+      if (Platform.OS === 'web') window.alert(message);
+      else Alert.alert("Алдаа", message);
+    } finally { setRentSubmitting(false); }
   };
 
   const activeImage = imageUrls[activeImageIndex] ?? imageUrls[0] ?? null;
-  const mainImageHeight = Math.min(Math.max(width * 0.62, 220), 340);
+  const isWeb = Platform.OS === "web";
+  const desktopWeb = isWeb && width >= 850;
+  const mainImageHeight = desktopWeb ? 420 : Math.min(Math.max(width * 0.62, 220), 340);
   const totalPrice = jobPrice * rentQuantity * calculatedDuration;
   const insurancePremiumForDisplay = calculateRentalInsurancePremium(totalPrice);
-  
-  return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]} edges={["bottom"]}>
-        
-        <AppHeader title="Зарын дэлгэрэнгүй" />
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
-          <TouchableOpacity style={[styles.posterSection, { backgroundColor: colors.background }]} activeOpacity={0.7} onPress={() => { if (!posterId) return; router.push(`/user-profile?userId=${encodeURIComponent(String(posterId))}`); }}>
-            {postedBy?.photoUri ? (
-              <Image source={{ uri: postedBy.photoUri }} style={styles.posterAvatar} contentFit="cover" transition={200} />
-            ) : (
+  const posterPanel = (<TouchableOpacity style={[styles.posterSection, { backgroundColor: colors.background }]} activeOpacity={0.7} onPress={() => { if (!posterId) return; router.push(`/user-profile?userId=${encodeURIComponent(String(posterId))}`); }}>
+    {postedBy?.photoUri ? (
+              <Image source={{ uri: postedBy.photoUri }} style={styles.posterAvatar} contentFit="cover" transition={200}
+                fallback={<Text style={[styles.posterInitial, { color: colors.primary }]}>{initial}</Text>} />
+    ) : (
               <View style={[styles.posterAvatar, { backgroundColor: colors.primary }]}><Text style={[styles.posterInitial, { color: colors.buttonText }]}>{initial}</Text></View>
-            )}
-            <View style={styles.posterInfo}>
+    )}
+    <View style={styles.posterInfo}>
               <View style={styles.posterNameRow}>
                 <Text style={[styles.posterName, { color: colors.text }]} numberOfLines={1}>{posterName}</Text>
                 {isDanVerified && <View style={styles.posterDanBadge}><ShieldCheck size={13} color="#087F4F" strokeWidth={2.8} /><Text style={styles.posterDanBadgeText}>DAN баталгаажсан</Text></View>}
               </View>
               <Text style={[styles.posterPhone, { color: colors.textSecondary }]}>{posterPhone || "Утасны дугааргүй"}</Text>
-            </View>
-          </TouchableOpacity>
-
-          <View style={[styles.titleSection, { backgroundColor: colors.background }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+    </View>
+    </TouchableOpacity>);
+  const titlePanel = (<View style={[styles.titleSection, { backgroundColor: colors.background }]}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
               <Text style={[styles.jobTitle, { color: colors.text, flex: 1, paddingRight: 10 }]}>{job.title || job.subcategory || job.category || "Зар"}</Text>
               <TouchableOpacity onPress={handleSharePress} style={[styles.shareIconWrap, { backgroundColor: colors.backgroundSecondary }]} activeOpacity={0.7}><Share2 size={22} color={colors.text} /></TouchableOpacity>
-            </View>
-            <View style={styles.priceContainer}>
+    </View>
+    <View style={styles.priceContainer}>
               <Tag size={20} color="#6E0AB0" />
               <Text style={[styles.jobPrice, { color: "#6E0AB0" }]}>
                 {jobPrice > 0 ? `${jobPrice.toLocaleString()} ₮` : "Үнэ тохиролцоно"}
                 {jobPrice > 0 && <Text style={[styles.priceUnit, { color: "#6E0AB0" }]}> / {priceTypeLabel}</Text>}
               </Text>
-            </View>
-            <View style={styles.badgesRow}>
+    </View>
+    <View style={styles.badgesRow}>
               {fuelType ? <View style={[styles.listingMetaBadge, { backgroundColor: colors.backgroundSecondary }]}><Text style={[styles.listingMetaBadgeText, { color: colors.textSecondary }]}>Түлш: {fuelType}</Text></View> : null}
               {rentalDurationLabel ? <View style={[styles.listingMetaBadge, { backgroundColor: colors.backgroundSecondary }]}><Text style={[styles.listingMetaBadgeText, { color: colors.textSecondary }]}>Хугацаа: {rentalDurationLabel}</Text></View> : null}
               {job.isSponsored ? (<View style={[styles.sponsoredBadge, { backgroundColor: currentTheme === "navy" ? "#2A2A2A" : "#FFF5CC" }]}><Text style={[styles.sponsoredBadgeText, { color: currentTheme === "navy" ? "#F8E75D" : "#8A6500" }]}>Sponsored</Text></View>) : null}
-            </View>
-          </View>
-
-          {imageUrls.length > 0 ? (
-            <View style={[styles.imagesSection, { backgroundColor: colors.background }]}>
+    </View>
+    </View>);
+  const galleryPanel = imageUrls.length > 0 ? (
+    <View style={[styles.imagesSection, { backgroundColor: colors.background }]}>
               <View style={styles.imageHeaderRow}>
                 <View style={styles.imageHeaderLeft}>
                   <Images size={18} color={colors.text} />
@@ -494,7 +495,8 @@ export default function JobDetailScreen() {
                 <Text style={[styles.imageCountText, { color: colors.textSecondary }]}>{activeImageIndex + 1}/{imageUrls.length}</Text>
               </View>
               {activeImage ? (
-                <Image source={{ uri: activeImage }} style={[styles.mainImage, { height: mainImageHeight }]} contentFit="cover" transition={300} />
+                <Image source={{ uri: activeImage }} style={[styles.mainImage, { height: mainImageHeight }]} contentFit={isWeb ? "contain" : "cover"} transition={300}
+                  fallback={<Text style={{ color: colors.textSecondary }}>Зураг ачаалж чадсангүй</Text>} />
               ) : null}
               {imageUrls.length > 1 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbnailScroll}>
@@ -502,14 +504,30 @@ export default function JobDetailScreen() {
                     const selected = index === activeImageIndex;
                     return (
                       <TouchableOpacity key={`${uri}-${index}`} activeOpacity={0.8} onPress={() => setActiveImageIndex(index)} style={[styles.thumbnailWrap, { borderColor: selected ? colors.primary : colors.border, backgroundColor: colors.backgroundSecondary }]}>
-                        <Image source={{ uri }} style={styles.thumbnailImage} contentFit="cover" transition={200} />
+                        <Image source={{ uri }} style={styles.thumbnailImage} contentFit="cover" transition={200}
+                          fallback={<Images size={16} color={colors.textSecondary} />} />
                       </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
               ) : null}
+    </View>
+    ) : null;
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <JobDetailFrame>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]} edges={["bottom"]}>
+        {!isWeb && <AppHeader title="Зарын дэлгэрэнгүй" />}
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.contentContainer, isWeb && styles.webContent]}>
+          {desktopWeb && galleryPanel ? (
+            <View style={styles.webDetailColumns}>
+              <View style={styles.webGalleryColumn}>{galleryPanel}</View>
+              <View style={styles.webSummaryColumn}>{titlePanel}{posterPanel}</View>
             </View>
-          ) : null}
+          ) : <>{isWeb ? <>{titlePanel}{galleryPanel}{posterPanel}</> : <>{posterPanel}{titlePanel}{galleryPanel}</>}</>}
 
           <View style={[styles.metaSection, { backgroundColor: colors.background }]}>
             <View style={styles.metaItem}><CalendarIcon size={16} color={colors.textSecondary} /><Text style={[styles.metaText, { color: colors.textSecondary }]}>{formatDate(safePostedDate)}</Text></View>
@@ -714,7 +732,7 @@ export default function JobDetailScreen() {
 
               <TouchableOpacity style={[styles.termsWrap, { backgroundColor: agreeTerms ? 'rgba(0,180,90,0.08)' : colors.backgroundSecondary, borderColor: agreeTerms ? '#00B45A' : colors.border }]} activeOpacity={0.8} onPress={() => setAgreeTerms(!agreeTerms)}>
                 <View style={styles.termsHeader}>{agreeTerms ? <CheckSquare size={20} color="#00B45A" /> : <Square size={20} color={colors.textSecondary} />}<Text style={[styles.termsTitle, { color: agreeTerms ? '#00B45A' : colors.text }]}>Хариуцлагын санамж зөвшөөрөх</Text></View>
-                <Text style={[styles.termsDesc, { color: colors.textSecondary }]}>Tureesly апп нь зөвхөн холбон зуучлах үүрэгтэй бөгөөд барааны бүрэн бүтэн байдал, эвдрэл гэмтэл болон төлбөрийн эрсдэлийг талууд 100% өөрсдөө хариуцна.</Text>
+                <Text style={[styles.termsDesc, { color: colors.textSecondary }]}>Arivly апп нь зөвхөн холбон зуучлах үүрэгтэй бөгөөд барааны бүрэн бүтэн байдал, эвдрэл гэмтэл болон төлбөрийн эрсдэлийг талууд 100% өөрсдөө хариуцна.</Text>
               </TouchableOpacity>
 
               <View style={styles.modalActions}>
@@ -759,6 +777,7 @@ export default function JobDetailScreen() {
           </View>
         </Modal>
       </SafeAreaView>
+      </JobDetailFrame>
         <ContactPhonePickerModal
           visible={contactPhoneModalVisible}
           userId={user?.id}
@@ -781,6 +800,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flex: 1 },
   contentContainer: { padding: 20 },
+  webContent: { width: "100%", maxWidth: 1200, alignSelf: "center" },
+  webDetailColumns: { flexDirection: "row", alignItems: "flex-start", gap: 18 },
+  webGalleryColumn: { flex: 1.35, minWidth: 0 },
+  webSummaryColumn: { flex: 1, minWidth: 0 },
   posterSection: { flexDirection: "row", alignItems: "center", padding: 16, borderRadius: 16, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   posterAvatar: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", marginRight: 16, backgroundColor: "#EAEAEA" },
   posterInitial: { fontSize: 28, fontWeight: "700" },

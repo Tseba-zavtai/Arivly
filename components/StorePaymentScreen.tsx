@@ -12,22 +12,25 @@ export default function StorePaymentScreen({ onChooseQPay, qpayPrices, initialPl
   const ids = jobIds ? jobIds.split(',').filter(Boolean) : jobId ? [jobId] : [];
   const kind = targetType === 'credit' ? 'credit' : targetType === 'bump' ? 'bump' : 'sponsor';
   const [selected, setSelected] = useState<StorePlan>(initialPlan ?? (kind === 'credit' ? 'credit' : kind === 'bump' ? 'bump' : 'daily'));
-  const [success, setSuccess] = useState(false);
   const { colors } = useTheme(), store = useStorePurchases(), router = useRouter();
   const sequence = useRef(store.completed?.sequence ?? 0);
   const requested = useRef<string | null>(null);
   const [recovering, setRecovering] = useState(false);
-  const [showPurchaseHelp, setShowPurchaseHelp] = useState(false);
   useEffect(() => {
     setSelected(initialPlan ?? (kind === 'credit' ? 'credit' : kind === 'bump' ? 'bump' : 'daily'));
-    setSuccess(false); requested.current = null;
+    requested.current = null;
   }, [kind, jobId, jobIds, initialPlan]);
   useEffect(() => {
     if (store.completed && store.completed.sequence > sequence.current) {
       sequence.current = store.completed.sequence;
-      if (store.completed.productId === requested.current) setSuccess(true);
+      if (store.completed.productId === requested.current) {
+        requested.current = null;
+        // Completion is emitted only after server grant and profile/feed refresh.
+        // Do not add another success screen or confirmation on top of the store sheet.
+        router.replace(kind === 'credit' ? '/profile' : kind === 'bump' ? '/' : '/my-jobs');
+      }
     }
-  }, [store.completed]);
+  }, [store.completed, kind, router]);
   const entries = (Object.keys(STORE_PRODUCTS) as StorePlan[]).filter(key => kind === 'credit' ? key.startsWith('credit') : kind === 'bump' ? key === 'bump' : ['daily', 'weekly', 'monthly'].includes(key));
   const validSelection = kind === 'credit' || ids.length === 1;
   const productId = storeProductId(selected, Platform.OS), price = store.prices[productId];
@@ -35,11 +38,7 @@ export default function StorePaymentScreen({ onChooseQPay, qpayPrices, initialPl
   return <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundSecondary }} edges={['bottom']}>
     <Stack.Screen options={{ headerShown: false }} /><AppHeader title="Төлбөр төлөлт" />
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-      {success ? <View style={panel}>
-        <Text style={{ color: colors.text, fontSize: 22, fontWeight: '800' }}>Худалдан авалт баталгаажлаа</Text>
-        <Text style={{ color: colors.text, marginVertical: 14 }}>Таны эрх / үйлчилгээ серверт амжилттай бүртгэгдсэн.</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={() => router.replace(kind === 'credit' ? '/profile' : '/my-jobs')}><Text style={{ color: colors.primary }}>Дуусгах</Text></TouchableOpacity>
-      </View> : <>
+      <>
         {!validSelection && <Text style={{ color: colors.text, marginBottom: 16 }}>Дэлгүүрээр төлөхдөө нэг удаад нэг зар сонгоно уу. Буцаад хүссэн нэг зараа сонгоорой. Одоогоор төлбөр аваагүй.</Text>}
         {entries.map(key => <TouchableOpacity key={key} accessibilityRole="radio" accessibilityState={{ checked: selected === key }} disabled={store.busy}
           onPress={() => setSelected(key)} style={{ ...panel, borderWidth: 2, borderColor: selected === key ? colors.primary : colors.border }}>
@@ -78,18 +77,12 @@ export default function StorePaymentScreen({ onChooseQPay, qpayPrices, initialPl
         </TouchableOpacity>}
         {store.hasPendingPurchase && <Text style={{ color: colors.textSecondary, marginTop: 10 }}>Давхар төлөхөөс сэргийлж хүлээгдэж буй дэлгүүрийн худалдан авалтаа эхлээд дахин шалгана уу.</Text>}
         <TouchableOpacity accessibilityRole="button" disabled={!store.ready || store.busy || recovering} style={{ padding: 18 }} onPress={async () => {
+          requested.current = productId;
           setRecovering(true); try { await store.recover(); } finally { setRecovering(false); }
         }}><Text style={{ color: colors.primary, textAlign: 'center' }}>{recovering ? 'Шалгаж байна…' : 'Худалдан авалтаа шалгах'}</Text></TouchableOpacity>
         <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>App Store / Google Play-ээр төлсөн худалдан авалт баталгаажаагүй бол дээрх товчоор дахин шалгаарай. Дахин төлөх шаардлагагүй.</Text>
-        <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: showPurchaseHelp }} style={{ paddingVertical: 18 }} onPress={() => setShowPurchaseHelp(value => !value)}>
-          <Text style={{ color: colors.primary, textAlign: 'center' }}>Худалдан авалтын тухай {showPurchaseHelp ? '⌃' : '⌄'}</Text>
-        </TouchableOpacity>
-        {showPurchaseHelp && <View style={panel}>
-          <Text style={{ color: colors.textSecondary }}>Та хүссэн үедээ нэмж эрх худалдаж авч болно. Дахин шалгах товч нь өмнөх төлбөрийн баталгаажуулалтыг шалгадаг бөгөөд шинэ худалдан авалт үүсгэхгүй.</Text>
-          <Text style={{ color: colors.textSecondary, marginTop: 12 }}>Хэрэгцээндээ тохирох багцаа сонгоорой. Ашигласан багцын буцаалтад хязгаарлалт үйлчилнэ. App Store / Google Play-ээр төлсөн бол тухайн дэлгүүрийн буцаалтын нөхцөл үйлчилнэ. Тусламж хэрэгтэй бол бидэнтэй холбогдоорой.</Text>
-          <TouchableOpacity accessibilityRole="link" style={{ marginTop: 12 }} onPress={() => router.push('/help/terms')}><Text style={{ color: colors.primary }}>Үйлчилгээний нөхцөл</Text></TouchableOpacity>
-        </View>}
-      </>}
+        <TouchableOpacity accessibilityRole="link" style={{ paddingVertical: 18 }} onPress={() => router.push('/help/terms')}><Text style={{ color: colors.primary, textAlign: 'center' }}>Үйлчилгээний нөхцөл</Text></TouchableOpacity>
+      </>
     </ScrollView>
   </SafeAreaView>;
 }

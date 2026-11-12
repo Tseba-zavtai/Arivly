@@ -16,6 +16,7 @@ import { loadSearchDemand, recordSearchDemand } from "@/lib/searchDemand";
 import { loadDefaultContactPhone } from "@/lib/contactPhones";
 import { isRentalRequestActionable } from "@/lib/rentalRequestExpiry";
 import { manageListings } from '@/lib/listingLifecycle';
+import { useAuth } from '@/contexts/AuthContext';
 
 const STORAGE_KEY = "@jobs_storage";
 const USER_LOCATION_KEY = "@user_location";
@@ -377,6 +378,8 @@ async function loadJobsFromCache(): Promise<Job[]> {
 }
 
 export const [JobsContext, useJobs] = createContextHook(() => {
+  const { user } = useAuth();
+  const rentalNotificationUserId = user?.id;
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -758,8 +761,7 @@ export const [JobsContext, useJobs] = createContextHook(() => {
     loadJobs();
     loadUserLocation();
     loadSavedJobs(); // Апп асах үед хадгалсан зарууд татагдана
-    loadRentalRequests().catch(() => {});
-  }, [loadJobs, loadUserLocation, loadSavedJobs, loadRentalRequests]);
+  }, [loadJobs, loadUserLocation, loadSavedJobs]);
 
   const addJob = useCallback(async (newJob: Omit<Job, "id" | "postedDate" | "applicants" | "postedBy">, userInfo: { name: string; phone: string; photoUri?: string; isSponsored?: boolean; sponsoredUntil?: Date | string | null; }) => {
       if (!isNonEmptyString(userInfo.phone)) throw new Error("Зар нийтлэхийн өмнө холбоо барих утсаа сонгоно уу.");
@@ -910,33 +912,25 @@ export const [JobsContext, useJobs] = createContextHook(() => {
     }, [jobs, loadJobs, loadRentalRequests]);
 
   useEffect(() => {
-    let channel: any = null;
-    let disposed = false;
+    setUnreadRentalRequestNotificationCount(0);
+    if (!rentalNotificationUserId) {
+      setRentalRequests([]);
+      setRentalRequestsError(null);
+      return;
+    }
 
-    const subscribeToRentalRequestNotifications = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      const userId = data.session?.user?.id;
-      if (disposed || error || !userId) {
-        if (!disposed && mountedRef.current) setUnreadRentalRequestNotificationCount(0);
-        return;
-      }
-
-      channel = supabase
-        .channel(`rental-request-notifications:${userId}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-          () => { void loadRentalRequests(); },
-        )
-        .subscribe();
-    };
-
-    void subscribeToRentalRequestNotifications();
-    return () => {
-      disposed = true;
-      if (channel) void supabase.removeChannel(channel);
-    };
-  }, [loadRentalRequests]);
+    const refresh = () => { void loadRentalRequests(); };
+    refresh();
+    const channel = supabase
+      .channel(`rental-request-notifications:${rentalNotificationUserId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${rentalNotificationUserId}` },
+        refresh,
+      )
+      .subscribe(status => { if (status === 'SUBSCRIBED') refresh(); });
+    return () => { void supabase.removeChannel(channel); };
+  }, [loadRentalRequests, rentalNotificationUserId]);
   return {
     jobs, addJob, sponsorJob, updateJobCategory, deleteJob, toggleJobActive, bumpJob, submitRentalReview,
     rentalRequests, rentalRequestsError, unreadRentalRequestNotificationCount, loadRentalRequests, markRentalRequestNotificationsRead, createRentalRequest, approveRentalRequest, rejectRentalRequest,

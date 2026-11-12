@@ -167,7 +167,7 @@ export default function LocationScreen() {
   }, [userCoords]);
 
   const goToJobDetail = (jobId: string | number) => {
-    router.push({ pathname: "/browse", params: { id: String(jobId) } });
+    router.push({ pathname: Platform.OS === 'web' ? '/job-detail' : '/browse', params: { id: String(jobId) } });
   };
 
   const showMap = selectedFilter === "location" || selectedFilter === "near";

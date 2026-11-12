@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Tureesly",
+    "name": "Arivly",
     "slug": "tureestei1",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tureesly",
@@ -23,29 +23,8 @@
         "NSCameraUsageDescription": "Зургаа авах болон зар оруулах үед камер ашиглана.",
         "NSPhotoLibraryUsageDescription": "Зураг сонгож зартаа оруулахын тулд зурагт хандах эрх хэрэгтэй.",
         "NSMicrophoneUsageDescription": "Микрофон ашигладаг боломжууд нэмэгдсэний дараа ашиглана.",
-        "NSFaceIDUsageDescription": "Tureesly-г нээхэд Face ID ашиглана.",
-        "ITSAppUsesNonExemptEncryption": false,
-        "LSApplicationQueriesSchemes": [
-          "qpaywallet",
-          "khanbank",
-          "statebankmongolia",
-          "xacbank",
-          "tdbbank",
-          "tdbwallet",
-          "socialpay-payment",
-          "most",
-          "nibank",
-          "ckbank",
-          "capitronbank",
-          "bogdbank",
-          "transbank",
-          "mbank",
-          "ard",
-          "toki",
-          "arig",
-          "Monpay",
-          "hipay"
-        ]
+        "NSFaceIDUsageDescription": "Arivly-г нээхэд Face ID ашиглана.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -54,7 +33,7 @@
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#7409B7"
+        "backgroundColor": "#6E0AB0"
       },
       "config": {
         "googleMaps": {
@@ -90,7 +69,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Tureesly-г нээхэд Face ID ашиглана."
+          "faceIDPermission": "Arivly-г нээхэд Face ID ашиглана."
         }
       ],
       "expo-font",
@@ -109,6 +88,7 @@
       ],
       "./plugins/with-bank-queries",
       "./plugins/with-android-branding",
+      "./plugins/with-android-release-optimization",
       "expo-notifications",
       "@react-native-community/datetimepicker",
       "expo-video",

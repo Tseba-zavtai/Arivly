@@ -548,6 +548,10 @@ export default function AdminPanel() {
           </TouchableOpacity>
         }
       />
+      {Platform.OS === 'web' && <TouchableOpacity style={{ padding: 18, backgroundColor: '#F2E5FA' }} onPress={() => router.push('/admin-home' as any)} accessibilityRole="button">
+        <Text style={{ color: '#6E0AB0', fontWeight: '700', fontSize: 16 }}>Нүүр засах →</Text>
+        <Text style={{ color: '#775786', marginTop: 5 }}>Гарчиг, зураг, хэсгүүд · Ноорог · Урьдчилсан харагдац · Нийтлэх</Text>
+      </TouchableOpacity>}
       <View style={styles.masterSearchContainer}>
         <View style={styles.searchInputWrapper}>
           <Search size={20} color="#999" style={styles.searchIcon} />

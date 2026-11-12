@@ -45,3 +45,9 @@ yarn-error.*
 .rork
 .env
 rork-eslint.config.js
+
+# Local QA and generated build files
+/output/
+/.expo-audit-export-android/
+/modules/*/android/build/
+/keystore/

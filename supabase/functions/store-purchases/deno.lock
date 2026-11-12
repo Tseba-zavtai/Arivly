@@ -2,7 +2,8 @@
   "version": "5",
   "specifiers": {
     "npm:@apple/app-store-server-library@2.0.0": "2.0.0",
-    "npm:jose@5.9.6": "5.9.6"
+    "npm:jose@5.9.6": "5.9.6",
+    "npm:jsrsasign@11.1.5": "11.1.5"
   },
   "npm": {
     "@apple/app-store-server-library@2.0.0": {

@@ -310,12 +310,12 @@ export default function AuthScreen() {
       >
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, Platform.OS === 'web' && styles.webScrollContent]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          <View style={styles.content}>
+          <View style={[styles.content, Platform.OS === 'web' && [styles.webContent, { backgroundColor: colors.background, borderColor: colors.border }]]}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={handleBackPress}
@@ -499,6 +499,8 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingBottom: 48 },
   content: { paddingHorizontal: 24, paddingTop: 12 },
+  webScrollContent: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, paddingTop: 32, paddingBottom: 32 },
+  webContent: { width: '100%', maxWidth: 480, alignSelf: 'center', padding: 28, paddingTop: 20, borderRadius: 22, borderWidth: 1, shadowColor: '#38154D', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.07, shadowRadius: 30 },
 
   backButton: {
     width: 40,

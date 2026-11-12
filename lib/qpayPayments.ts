@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { Platform } from 'react-native';
 
 export type QPayInvoice = {
   orderId: string;
@@ -27,6 +28,9 @@ const messages: Record<string, string> = {
 };
 
 export async function callQPay<T>(body: Record<string, unknown>): Promise<T> {
+  if (Platform.OS === 'ios') {
+    throw new Error('iOS дээр App Store-оор төлбөр төлнө үү.');
+  }
   const { data, error } = await supabase.functions.invoke("qpay-service", { body });
   let result = data;
   if (error?.context instanceof Response) {

@@ -33,5 +33,5 @@ test('Android uses a compact mark while iOS retains its existing splash', () => 
   assert.equal(splash.imageWidth,300);
   assert.equal(splash.android.image,'./assets/images/icon.png');
   assert.equal(splash.android.imageWidth,96);
-  assert.equal(config.android.adaptiveIcon.backgroundColor,'#7409B7');
+  assert.equal(config.android.adaptiveIcon.backgroundColor,'#6E0AB0');
 });

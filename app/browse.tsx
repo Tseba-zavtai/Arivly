@@ -8,6 +8,7 @@ import {
   View,
   Keyboard,
   Image,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -716,7 +717,7 @@ export default function BrowseScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SafeAreaView
         edges={["bottom"]}
-        style={[styles.safeArea, { backgroundColor: colors.headerBackground }]}
+        style={[styles.safeArea, { backgroundColor: Platform.OS === 'web' ? '#fff' : colors.headerBackground }]}
       >
         <AppHeader title="Хайх" />
 
