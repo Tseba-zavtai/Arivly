@@ -7,11 +7,15 @@ node_modules/
 .expo/
 dist/
 web-build/
+output/tureesly-web/
+output/pwa-baseline/
+output/expo-tmp/
+output/ios-qpay-disabled/
 expo-env.d.ts
 
 # Native
 ios/
-android/
+/android/
 *.orig.*
 *.jks
 *.p8

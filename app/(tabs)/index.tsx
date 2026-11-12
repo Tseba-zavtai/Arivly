@@ -25,7 +25,7 @@ import {
   ActivityIndicator,
   Linking,
 } from "react-native";
-import { Image } from "expo-image";
+import Image from "@/components/ListingImage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -292,14 +292,29 @@ function JobCard({
   return (
     <View style={[styles.gridJobCard, { backgroundColor: colors.card }]}>
       <View style={[styles.gridMedia, { backgroundColor: colors.backgroundSecondary }]} onLayout={(event) => handleMediaLayout(event.nativeEvent.layout.width)}>
-        {imageUrls.length > 0 ? (
+        {imageUrls.length === 1 ? (
+          <Pressable
+            style={styles.gridSingleImage}
+            onPress={handleCardPress}
+            accessibilityRole="button"
+            accessibilityLabel={`${listingLabel} дэлгэрэнгүй харах`}
+          >
+            <Image
+              source={{ uri: imageUrls[0] }}
+              style={[styles.gridImage, StyleSheet.absoluteFillObject]}
+              contentFit="cover"
+              transition={200}
+              fallback={<Text style={styles.gridPlaceholderIcon}>{iconEmoji}</Text>}
+            />
+          </Pressable>
+        ) : imageUrls.length > 1 ? (
           <ScrollView
             style={styles.gridImageScroller}
             horizontal
             pagingEnabled
             directionalLockEnabled
             nestedScrollEnabled
-            scrollEnabled={imageUrls.length > 1}
+            removeClippedSubviews={false}
             showsHorizontalScrollIndicator={false}
             scrollEventThrottle={16}
             onTouchStart={beginMediaTouch}
@@ -316,9 +331,10 @@ function JobCard({
               <Image
                 key={`${j.id}-img-${index}`}
                 source={{ uri }}
-                style={[styles.gridImage, { width: mediaWidth || 160 }]}
+                style={[styles.gridImage, { width: mediaWidth || 160, height: mediaWidth || 160 }]}
                 contentFit="cover"
                 transition={200}
+                fallback={<Text style={styles.gridPlaceholderIcon}>{iconEmoji}</Text>}
               />
             ))}
           </ScrollView>
@@ -987,7 +1003,7 @@ export default function HomeScreen() {
             <Sparkles size={48} color={colors.primary} style={{ marginBottom: 16 }} />
             <Text style={[styles.versionTitle, { color: colors.text }]}>Шинэчлэлт олдлоо! 🚀</Text>
             <Text style={[styles.versionDesc, { color: colors.textSecondary }]}>
-              Tureesly аппликейшнийг хэвийн ашиглахын тулд та заавал шинэ хувилбарыг татах шаардлагатай байна.
+              Arivly аппликейшнийг хэвийн ашиглахын тулд та заавал шинэ хувилбарыг татах шаардлагатай байна.
             </Text>
             <TouchableOpacity 
               style={[styles.versionBtn, { backgroundColor: colors.primary }]} 
@@ -1144,8 +1160,9 @@ const styles = StyleSheet.create({
   gridSpacer: { flex: 1 },
   gridMedia: { width: "100%", aspectRatio: 1, position: "relative", overflow: "hidden" },
   gridImageScroller: { width: "100%", height: "100%" },
-  gridImage: { height: "100%", backgroundColor: "#E9E9E9" },
-  gridImageFallback: { width: "100%", alignItems: "center", justifyContent: "center" },
+  gridSingleImage: { ...StyleSheet.absoluteFillObject },
+  gridImage: { backgroundColor: "#E9E9E9" },
+  gridImageFallback: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
   gridPlaceholderIcon: { fontSize: 34 },
   gridSponsoredBadge: { position: "absolute", top: 8, left: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   gridSponsoredText: { fontSize: 10, fontWeight: "800" },
