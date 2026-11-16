@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Image } from "expo-image";
+import Image from "@/components/ListingImage";
 import { Heart, ShieldCheck, Star, Tag } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -128,13 +128,28 @@ export default function ListingGridCard({ job, isSaved, onToggleSave, imageSwipe
           if (width > 0 && Math.abs(width - mediaWidth) > 0.5) setMediaWidth(width);
         }}
       >
-        {imageUrls.length > 0 ? (
+        {imageUrls.length > 0 && (!imageSwipeEnabled || imageUrls.length === 1) ? (
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={openListing}
+            accessibilityRole="button"
+            accessibilityLabel={`${listingLabel} дэлгэрэнгүй харах`}
+          >
+            <Image
+              source={{ uri: imageUrls[0] }}
+              style={StyleSheet.absoluteFillObject}
+              contentFit="cover"
+              transition={180}
+              fallback={<Tag size={30} color={colors.primary} />}
+            />
+          </Pressable>
+        ) : imageUrls.length > 1 ? (
           <ScrollView
             horizontal
             pagingEnabled
             directionalLockEnabled
             nestedScrollEnabled
-            scrollEnabled={imageSwipeEnabled && imageUrls.length > 1}
+            removeClippedSubviews={false}
             showsHorizontalScrollIndicator={false}
             onTouchStart={beginMediaTouch}
             onTouchMove={moveMediaTouch}
@@ -160,9 +175,10 @@ export default function ListingGridCard({ job, isSaved, onToggleSave, imageSwipe
               <Image
                 key={`${job?.id ?? "listing"}-image-${index}`}
                 source={{ uri }}
-                style={[styles.image, { width: mediaWidth || 160 }]}
+                style={[styles.image, { width: mediaWidth || 160, height: mediaWidth || 160 }]}
                 contentFit="cover"
                 transition={180}
+                fallback={<Tag size={30} color={colors.primary} />}
               />
             ))}
           </ScrollView>

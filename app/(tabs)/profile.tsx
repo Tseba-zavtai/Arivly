@@ -38,6 +38,7 @@ import {
 } from "lucide-react-native";
 import { useFocusEffect, useRootNavigationState, useRouter } from "expo-router";
 import Constants from "expo-constants";
+import { nativeApplicationVersion, nativeBuildVersion } from "expo-application";
 import { useJobs } from "@/contexts/JobsContext";
 import { useCallback, useMemo, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -81,7 +82,10 @@ export default function ProfileScreen() {
   } = useAuth() as any;
   const { colors } = useTheme();
   const { isAppLockEnabled, setAppLockEnabled } = useAppLock();
-  const appVersion = Constants.expoConfig?.version ?? "1.0.0";
+  const appVersion = Platform.OS === "android"
+    ? nativeApplicationVersion ?? Constants.expoConfig?.version ?? "1.0.0"
+    : Constants.expoConfig?.version ?? "1.0.0";
+  const buildLabel = Platform.OS === "android" && nativeBuildVersion ? ` (build ${nativeBuildVersion})` : "";
 
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [contactPhoneModalVisible, setContactPhoneModalVisible] = useState(false);
@@ -596,7 +600,7 @@ export default function ProfileScreen() {
           activeOpacity={0.7}
           onPress={() => router.push("/release-notes" as any)}
         >
-          <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '700' }}>Хувилбар {appVersion}</Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '700' }}>Хувилбар {appVersion}{buildLabel}</Text>
           <Text style={{ marginTop: 3, fontSize: 12, color: colors.primary, fontWeight: '600' }}>Шинэчлэлийн мэдээлэл харах</Text>
         </TouchableOpacity>
         <View style={styles.bottomPadding} />

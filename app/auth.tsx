@@ -20,6 +20,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { StatusBar } from "expo-status-bar";
+import { useIsFocused } from "@react-navigation/native";
 import { ArrowLeft, Eye, EyeOff, LogIn, KeyRound, ShieldCheck } from "lucide-react-native";
 import { supabase } from "@/lib/supabase"; // 🎯 НЭМСЭН: Supabase холболт
 
@@ -34,6 +36,7 @@ export default function AuthScreen() {
   const signUpWithDan = auth.signUpWithDan as () => Promise<DanAuthResult>;
   const logout = auth.logout as () => Promise<void>;
   const { colors } = useTheme();
+  const isFocused = useIsFocused();
 
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -303,6 +306,7 @@ export default function AuthScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]} edges={["top"]}>
+      {isFocused && Platform.OS !== "web" ? <StatusBar style="dark" /> : null}
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

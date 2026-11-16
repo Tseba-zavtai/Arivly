@@ -118,7 +118,7 @@ function createFeedRows(jobs: any[], showBanners: boolean): FeedRow[] {
 
     // Twelve cards = six complete rows. A banner belongs immediately after the
     // 12th card, not after an arbitrary number of pixels or after the next row.
-    if (showBanners && visibleCount >= 12 && visibleCount % 12 === 0) {
+    if (showBanners && (visibleCount % 12 === 0 || visibleCount === jobs.length)) {
       rows.push({ type: "banner", key: `listing-banner-after-${visibleCount}` });
     }
   }

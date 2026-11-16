@@ -2,10 +2,10 @@ import { Image as ExpoImage } from "expo-image";
 import { useState, type ReactNode } from "react";
 import { Image, Platform, View, type ImageSourcePropType, type ImageStyle, type StyleProp, type ViewStyle } from "react-native";
 
-export default function ListingImage({ source, style, contentFit, transition, fallback }: {
+export default function ListingImage({ source, style, contentFit = "cover", transition, fallback }: {
   source: ImageSourcePropType;
   style?: StyleProp<ImageStyle>;
-  contentFit: "cover" | "contain";
+  contentFit?: "cover" | "contain";
   transition?: number;
   fallback?: ReactNode;
 }) {

@@ -100,7 +100,7 @@ const OpenStreetMap = forwardRef(function OpenStreetMap(props: MapViewProps, ref
       // intercept vertical movement (RNCWebView disallows parent interception).
       nestedScrollEnabled
       originWhitelist={["*"]} javaScriptEnabled cacheEnabled cacheMode="LOAD_DEFAULT"
-      userAgent="Tureesly/1.0 (Android; mn.tureestei.app)" mixedContentMode="never"
+      userAgent="Arivly/1.0 (Android; mn.tureestei.app)" mixedContentMode="never"
       allowFileAccess={false} allowUniversalAccessFromFileURLs={false} setSupportMultipleWindows={false}
       onShouldStartLoadWithRequest={request => {
         if (request.url === "about:blank" || request.url === source.baseUrl) return true;

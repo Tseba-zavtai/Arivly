@@ -16,7 +16,7 @@ function SocialIcon({ platform }: { platform: HomeSocial }) {
 }
 const appStore = 'https://apps.apple.com/mn/app/id6777877910';
 const playStore = 'https://play.google.com/store/apps/details?id=mn.tureestei.app';
-const publicHome = 'https://tureesly.pages.dev/';
+const publicHome = 'https://arivly.mn/';
 
 export default function WebHomeFooter({ page, onBrowse }: { page: HomePageContent; onBrowse: () => void }) {
   const [shareStatus, setShareStatus] = useState('');

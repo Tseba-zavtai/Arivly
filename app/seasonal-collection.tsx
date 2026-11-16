@@ -9,7 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Image } from "expo-image";
+import Image from "@/components/ListingImage";
+import { Image as CoverImage } from "expo-image";
 import { MapPin, Sparkles, Tag } from "lucide-react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AppHeader from "@/components/AppHeader";
@@ -113,11 +114,18 @@ export default function SeasonalCollectionScreen() {
           </View>
         ) : (
           <>
-            <View style={[styles.hero, { backgroundColor: colors.accent }]}> 
-              <View style={styles.heroIcon}><Sparkles size={22} color={colors.primary} /></View>
-              <Text style={[styles.heroTitle, { color: colors.text }]}>{collection.title}</Text>
-              {!!collection.subtitle && <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>{collection.subtitle}</Text>}
-              <Text style={[styles.heroMeta, { color: colors.primary }]}>Энэ сарын онцлох сонголтууд</Text>
+            <View style={[styles.hero, { backgroundColor: colors.accent }, !!collection.coverImageUrl && styles.heroWithCover]}>
+              {!!collection.coverImageUrl && (
+                <CoverImage
+                  source={{ uri: collection.coverImageUrl }}
+                  style={StyleSheet.absoluteFillObject}
+                  contentFit="cover"
+                  contentPosition="top center"
+                />
+              )}
+              <Text style={[styles.heroTitle, { color: colors.text }, !!collection.coverImageUrl && styles.coverTitle]}>
+                {collection.title}
+              </Text>
             </View>
 
             <View style={styles.sectionHeader}>
@@ -159,7 +167,7 @@ export default function SeasonalCollectionScreen() {
                       <Text style={[styles.priceText, { color: colors.text }]}>{formatPrice(job)}</Text>
                     </View>
                   </TouchableOpacity>
-                  {banners.length > 0 && (index + 1) % 12 === 0 && (
+                  {banners.length > 0 && ((index + 1) % 12 === 0 || index === seasonalJobs.length - 1) && (
                     <View style={styles.bannerWrap}>
                       <BannerCarousel banners={banners} />
                     </View>
@@ -185,11 +193,10 @@ const styles = StyleSheet.create({
   contentContainer: { padding: 20, paddingBottom: 36 },
   bannerWrap: { marginBottom: 12 },
   loadingWrap: { minHeight: 260, justifyContent: "center", alignItems: "center" },
-  hero: { borderRadius: 18, padding: 18, marginBottom: 24 },
-  heroIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.52)", marginBottom: 10 },
+  hero: { borderRadius: 18, padding: 18, marginBottom: 24, overflow: "hidden" },
+  heroWithCover: { aspectRatio: 16 / 9, justifyContent: "flex-end", backgroundColor: "#251732" },
   heroTitle: { fontSize: 22, fontWeight: "800" },
-  heroSubtitle: { fontSize: 14, lineHeight: 20, marginTop: 5 },
-  heroMeta: { fontSize: 13, fontWeight: "700", marginTop: 12 },
+  coverTitle: { alignSelf: "flex-start", color: "#FFF", backgroundColor: "rgba(28, 15, 40, 0.75)", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   sectionTitle: { fontSize: 18, fontWeight: "800" },
   countText: { fontSize: 14, fontWeight: "700" },

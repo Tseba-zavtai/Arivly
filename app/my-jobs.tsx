@@ -1,7 +1,7 @@
 // app/my-jobs.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
-import { Image } from "expo-image";
+import Image from "@/components/ListingImage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Eye, EyeOff, Trash2, Pause, Play, TrendingUp, Award, Clock, Image as ImageIcon, Star } from "lucide-react-native";
 import { Stack, useRouter } from "expo-router";

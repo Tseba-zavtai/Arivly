@@ -17,6 +17,8 @@ function render(tab = 'login') {
     'react-native': new Proxy({ StyleSheet: { create: value => value }, Platform: { OS: 'android' }, Keyboard: { dismiss() {} } }, { get: (target, key) => target[key] || key }),
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'expo-router': { useRouter: () => ({ replace() {} }) },
+    'expo-status-bar': { StatusBar: 'StatusBar' },
+    '@react-navigation/native': { useIsFocused: () => true },
     '@/contexts/AuthContext': { useAuth: () => ({ signUpWithDan: () => { throw new Error('DAN must not start on tab selection'); } }) },
     '@/contexts/ThemeContext': { useTheme: () => ({ colors: {} }) },
     'lucide-react-native': new Proxy({}, { get: (_, key) => key }),

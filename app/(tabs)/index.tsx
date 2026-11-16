@@ -1007,7 +1007,7 @@ export default function HomeScreen() {
             </Text>
             <TouchableOpacity 
               style={[styles.versionBtn, { backgroundColor: colors.primary }]} 
-              onPress={() => Linking.openURL("https://tureesly.mn")} 
+              onPress={() => Linking.openURL("https://arivly.mn")}
             >
               <Text style={{ color: colors.buttonText, fontWeight: "700", fontSize: 16 }}>Шинэчлэх</Text>
             </TouchableOpacity>

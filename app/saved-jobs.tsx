@@ -1,7 +1,7 @@
 // app/saved-jobs.tsx
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
-import { Image } from "expo-image";
+import Image from "@/components/ListingImage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Heart, Image as ImageIcon } from "lucide-react-native";
 import { useRouter } from "expo-router";
