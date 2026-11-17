@@ -38,7 +38,8 @@ import {
 } from "lucide-react-native";
 import { useFocusEffect, useRootNavigationState, useRouter } from "expo-router";
 import Constants from "expo-constants";
-import { nativeApplicationVersion, nativeBuildVersion } from "expo-application";
+import { ANDROID_BUILD_DATE } from "@/constants/release";
+import { nativeApplicationVersion } from "expo-application";
 import { useJobs } from "@/contexts/JobsContext";
 import { useCallback, useMemo, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -85,7 +86,7 @@ export default function ProfileScreen() {
   const appVersion = Platform.OS === "android"
     ? nativeApplicationVersion ?? Constants.expoConfig?.version ?? "1.0.0"
     : Constants.expoConfig?.version ?? "1.0.0";
-  const buildLabel = Platform.OS === "android" && nativeBuildVersion ? ` (build ${nativeBuildVersion})` : "";
+  const buildLabel = Platform.OS === "android" ? ` (${ANDROID_BUILD_DATE})` : "";
 
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [contactPhoneModalVisible, setContactPhoneModalVisible] = useState(false);

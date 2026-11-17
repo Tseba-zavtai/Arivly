@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CheckCircle2, Clock3, PackageOpen, RefreshCw, Wrench } from "lucide-react-native";
 import Constants from "expo-constants";
+import { nativeBuildVersion } from "expo-application";
 import AppHeader from "@/components/AppHeader";
 import { useTheme } from "@/contexts/ThemeContext";
 import { supabase } from "@/lib/supabase";
@@ -123,7 +125,9 @@ export default function ReleaseNotesScreen() {
           <PackageOpen size={26} color={colors.buttonText} />
           <View style={styles.versionTextWrap}>
             <Text style={[styles.versionLabel, { color: colors.buttonText }]}>Таны ашиглаж буй хувилбар</Text>
-            <Text style={[styles.versionText, { color: colors.buttonText }]}>v{appVersion}</Text>
+            <Text style={[styles.versionText, { color: colors.buttonText }]}>
+              v{appVersion}{Platform.OS === "android" && nativeBuildVersion ? ` · build ${nativeBuildVersion}` : ""}
+            </Text>
           </View>
         </View>
 

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image as NativeImage,
+  Platform,
   RefreshControl,
 
   ScrollView,
@@ -23,6 +25,29 @@ import {
   jobMatchesSeasonalCollection,
   type SeasonalCollection,
 } from "@/lib/seasonalCollections";
+
+function AndroidSeasonalCover({ uri }: { uri: string }) {
+  const [frame, setFrame] = useState({ width: 0, height: 0 });
+  const [source, setSource] = useState({ width: 0, height: 0 });
+  const scale = source.width > 0 && source.height > 0
+    ? Math.max(frame.width / source.width, frame.height / source.height)
+    : 0;
+  const width = scale ? source.width * scale : frame.width;
+  const height = scale ? source.height * scale : frame.height;
+
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFillObject} onLayout={({ nativeEvent }) => setFrame(nativeEvent.layout)}>
+      {frame.width > 0 && frame.height > 0 && (
+        <NativeImage
+          source={{ uri }}
+          resizeMode="cover"
+          onLoad={({ nativeEvent }) => setSource(nativeEvent.source)}
+          style={{ position: "absolute", top: 0, left: (frame.width - width) / 2, width, height }}
+        />
+      )}
+    </View>
+  );
+}
 
 function getImageUrl(job: any): string | null {
   const urls = job?.image_urls ?? job?.imageUrls ?? null;
@@ -115,14 +140,16 @@ export default function SeasonalCollectionScreen() {
         ) : (
           <>
             <View style={[styles.hero, { backgroundColor: colors.accent }, !!collection.coverImageUrl && styles.heroWithCover]}>
-              {!!collection.coverImageUrl && (
+              {collection.coverImageUrl && (Platform.OS === "android" ? (
+                <AndroidSeasonalCover key={collection.coverImageUrl} uri={collection.coverImageUrl} />
+              ) : (
                 <CoverImage
                   source={{ uri: collection.coverImageUrl }}
                   style={StyleSheet.absoluteFillObject}
                   contentFit="cover"
                   contentPosition="top center"
                 />
-              )}
+              ))}
               <Text style={[styles.heroTitle, { color: colors.text }, !!collection.coverImageUrl && styles.coverTitle]}>
                 {collection.title}
               </Text>

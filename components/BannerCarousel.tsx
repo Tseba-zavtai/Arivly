@@ -13,7 +13,7 @@ import {
   NativeSyntheticEvent,
 } from "react-native";
 import * as Linking from "expo-linking";
-import { Image as ExpoImage } from "expo-image";
+import ListingImage from "@/components/ListingImage";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { recordPromotionMetric } from "@/lib/promotionMetrics";
 import { useIsFocused } from '@react-navigation/native';
@@ -69,10 +69,10 @@ function VideoBannerMedia({ mediaUrl, isActive }: { mediaUrl: string; isActive: 
   return <VideoView style={styles.image} player={player} contentFit="cover" nativeControls={false} allowsFullscreen={false} />;
 }
 
-function BannerMedia({ banner, isActive }: { banner: Banner; isActive: boolean }) {
+function BannerMedia({ banner, isActive, width, height }: { banner: Banner; isActive: boolean; width: number; height: number }) {
   const mediaUrl = mediaUrlForBanner(banner);
   if (isVideoBanner(banner)) return <VideoBannerMedia mediaUrl={mediaUrl} isActive={isActive} />;
-  return <ExpoImage source={{ uri: mediaUrl }} style={styles.image} contentFit="cover" transition={200} cachePolicy="memory-disk" />;
+  return <ListingImage source={{ uri: mediaUrl }} style={{ width, height }} contentFit="cover" transition={200} />;
 }
 
 export default function BannerCarousel({
@@ -221,7 +221,7 @@ export default function BannerCarousel({
                 },
               ]}
             >
-              <BannerMedia banner={item} isActive={itemIndex === index} />
+              <BannerMedia banner={item} isActive={enabled && isFocused && appActive && isInViewport && itemIndex === index} width={Math.max(1, carouselWidth - H_PADDING * 2)} height={computedHeight} />
 
             </View>
           </Pressable>
