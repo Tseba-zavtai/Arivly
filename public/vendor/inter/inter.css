@@ -1,0 +1,16 @@
+@font-face {
+  font-family: Inter;
+  src: url('./inter-variable.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --arivly-web-font: Inter, Arial, sans-serif;
+}
+
+body,
+#root :where(div, span, a, button, input, textarea, select, optgroup, option):not([style*='font-family']) {
+  font-family: var(--arivly-web-font);
+}

@@ -7,13 +7,11 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
-  PanResponder,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MapPin, Check } from "lucide-react-native";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import * as Location from "expo-location";
 import { useJobs } from "@/contexts/JobsContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -31,10 +29,6 @@ export default function LocationPickerScreen() {
   const { colors } = useTheme();
 
 
-  const [pinPosition, setPinPosition] = useState({
-    x: MAP_WIDTH / 2,
-    y: MAP_HEIGHT / 2,
-  });
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
@@ -69,39 +63,18 @@ export default function LocationPickerScreen() {
     }
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => {
-        const { locationX, locationY } = evt.nativeEvent;
-        setPinPosition({
-          x: Math.max(20, Math.min(MAP_WIDTH - 20, locationX)),
-          y: Math.max(20, Math.min(MAP_HEIGHT - 20, locationY)),
-        });
-      },
-      onPanResponderMove: (evt) => {
-        const { locationX, locationY } = evt.nativeEvent;
-        setPinPosition({
-          x: Math.max(20, Math.min(MAP_WIDTH - 20, locationX)),
-          y: Math.max(20, Math.min(MAP_HEIGHT - 20, locationY)),
-        });
-      },
-    })
-  ).current;
-
   const handleSaveLocation = async () => {
     if (!currentLocation) {
       Alert.alert("Алдаа", "Байршил олдсонгүй. Дахин оролдоно уу.");
       return;
     }
 
-    const offsetLat = Platform.OS === "web" ? ((pinPosition.y - MAP_HEIGHT / 2) / MAP_HEIGHT) * 0.1 : 0;
-    const offsetLng = Platform.OS === "web" ? ((pinPosition.x - MAP_WIDTH / 2) / MAP_WIDTH) * 0.1 : 0;
+
+
 
     const location = {
-      latitude: currentLocation.latitude + offsetLat,
-      longitude: currentLocation.longitude + offsetLng,
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude,
     };
 
     await saveUserLocation(location);
@@ -128,13 +101,11 @@ export default function LocationPickerScreen() {
           <Text style={[styles.instructionText, { color: colors.text }]}>
             {isLoadingLocation
               ? "Байршил хайж байна..."
-              : Platform.OS !== "web"
-                ? "Доорх газрын зураг дээр дарж байршлаа сонгоно уу"
-                : "Газрын зураг зөвхөн утсан дээр ажиллана"}
+              : "Доорх газрын зураг дээр дарж байршлаа сонгоно уу"}
           </Text>
         </View>
 
-        {Platform.OS !== "web" ? (
+        {(
           <View
             style={[
               styles.mapContainer,
@@ -152,10 +123,6 @@ export default function LocationPickerScreen() {
                 }}
                 onPress={(event: any) => {
                   setCurrentLocation(event.nativeEvent.coordinate);
-                  setPinPosition({
-                    x: MAP_WIDTH / 2,
-                    y: MAP_HEIGHT / 2,
-                  });
                 }}
               >
                 <Marker
@@ -173,92 +140,6 @@ export default function LocationPickerScreen() {
                 <ActivityIndicator size="large" color={colors.primary} />
               </View>
             )}
-          </View>
-        ) : (
-          <View
-            style={[
-              styles.mapContainer,
-              { borderColor: colors.primary, shadowColor: colors.primary },
-            ]}
-            {...panResponder.panHandlers}
-          >
-            <View style={styles.gridBackground}>
-              {Array.from({ length: 10 }).map((_, i) => (
-                <View
-                  key={`h-${i}`}
-                  style={[styles.gridLineHorizontal, { top: `${i * 10}%` }]}
-                />
-              ))}
-              {Array.from({ length: 10 }).map((_, i) => (
-                <View
-                  key={`v-${i}`}
-                  style={[styles.gridLineVertical, { left: `${i * 10}%` }]}
-                />
-              ))}
-            </View>
-
-            {currentLocation && !isLoadingLocation && (
-              <View style={styles.centerMarker}>
-                <View
-                  style={[
-                    styles.centerMarkerDot,
-                    { backgroundColor: colors.primary },
-                  ]}
-                />
-                <Text
-                  style={[styles.centerMarkerText, { color: colors.primary }]}
-                >
-                  Таны байршил
-                </Text>
-              </View>
-            )}
-
-            {isLoadingLocation && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="large" color={colors.primary} />
-              </View>
-            )}
-
-            <View
-              style={[
-                styles.pin,
-                {
-                  left: pinPosition.x - 20,
-                  top: pinPosition.y - 40,
-                },
-              ]}
-            >
-              <View style={[styles.pinIcon, { backgroundColor: colors.error }]}>
-                <MapPin size={24} color="#fff" fill={colors.error} />
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.coordinatesDisplay,
-                { backgroundColor: colors.primary },
-              ]}
-            >
-              <Text style={[styles.coordinatesText, { color: colors.buttonText }]}>
-                Pin: {pinPosition.x.toFixed(0)}, {pinPosition.y.toFixed(0)}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.webLocationNote,
-                { backgroundColor: colors.background },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.webLocationNoteText,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                📍 Газрын зураг зөвхөн утсан дээр ажиллана
-              </Text>
-            </View>
           </View>
         )}
 

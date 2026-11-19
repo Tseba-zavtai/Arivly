@@ -61,7 +61,8 @@ export default function DanOnboardingScreen() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSecondary }]} edges={["top", "bottom"]}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.flex} contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}>
+          <View style={Platform.OS === 'web' ? [styles.webCard, { backgroundColor: colors.background, borderColor: colors.border }] : undefined}>
           <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
             <ShieldCheck size={46} color={colors.buttonText} />
           </View>
@@ -135,9 +136,10 @@ export default function DanOnboardingScreen() {
           <TouchableOpacity disabled={saving} onPress={() => { void logout().then(() => router.replace("/auth")); }} style={{ padding: 16, alignItems: "center" }}>
             <Text style={{ color: colors.textSecondary }}>Гарах — бүртгэлээ дараа үргэлжлүүлэх</Text>
           </TouchableOpacity>
-          <Text style={{ color: colors.textSecondary, textAlign: "center", fontSize: 12 }}>
+          {Platform.OS !== 'web' && <Text style={{ color: colors.textSecondary, textAlign: "center", fontSize: 12 }}>
             {Constants.nativeAppVersion ?? "1.0.0"} ({Constants.nativeBuildVersion ?? "dev"})
-          </Text>
+          </Text>}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -148,6 +150,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 54, paddingBottom: 44 },
+  webContent: { paddingHorizontal: 16, paddingVertical: 32, justifyContent: 'center', alignItems: 'center' },
+  webCard: { width: '100%', maxWidth: 520, borderWidth: 1, borderRadius: 24, padding: 24 },
   iconCircle: { width: 92, height: 92, borderRadius: 46, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 24 },
   title: { fontSize: 30, fontWeight: "800", textAlign: "center", marginBottom: 12 },
   subtitle: { fontSize: 16, lineHeight: 24, textAlign: "center", maxWidth: 360, alignSelf: "center" },

@@ -127,6 +127,7 @@ export default function AuthScreen() {
   };
 
   const handleLogin = async () => {
+    if (isLoading) return;
     const phone8 = validatePhone8(phone);
     if (!phone8) return;
     if (!password.trim()) {
@@ -288,6 +289,9 @@ export default function AuthScreen() {
           secureTextEntry={confirm ? !showConfirmPassword : !showPassword}
           textContentType={confirm ? "newPassword" : isForgotPassword ? "newPassword" : "password"}
           autoCapitalize="none"
+          onSubmitEditing={Platform.OS === "web" && !confirm && !isForgotPassword && authTab === "login"
+            ? () => void handleLogin()
+            : undefined}
         />
         <TouchableOpacity
           style={styles.eyeButton}
@@ -445,8 +449,9 @@ export default function AuthScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Modal visible={showTerms} animationType="slide" onRequestClose={() => setShowTerms(false)}>
-        <SafeAreaView style={[styles.termsModal, { backgroundColor: colors.backgroundSecondary }]} edges={["top", "bottom"]}>
+      <Modal visible={showTerms} transparent={Platform.OS === 'web'} animationType="fade" onRequestClose={() => setShowTerms(false)}>
+        <View style={styles.termsBackdrop}>
+        <SafeAreaView style={[styles.termsModal, { backgroundColor: colors.background }, Platform.OS === 'web' && styles.termsWebCard]} edges={["top", "bottom"]}>
           <View style={styles.termsHeader}>
             <Text style={[styles.termsTitle, { color: colors.text }]}>Үйлчилгээний нөхцөл</Text>
             <TouchableOpacity onPress={() => setShowTerms(false)} activeOpacity={0.7}>
@@ -455,6 +460,7 @@ export default function AuthScreen() {
           </View>
 
           <ScrollView
+            style={{ flex: 1, minHeight: 0 }}
             ref={termsScrollRef}
             contentContainerStyle={styles.termsBody}
             onScroll={onTermsScroll}
@@ -468,9 +474,11 @@ export default function AuthScreen() {
                 <ActivityIndicator color={colors.text} />
               </View>
             ) : (
-              <Text style={[styles.termsParagraph, { color: colors.textSecondary }]}>
-                {termsText || "Үйлчилгээний нөхцөл олдсонгүй."}
-              </Text>
+              <View style={{ gap: 14 }}>
+                {(termsText || "Үйлчилгээний нөхцөл олдсонгүй.").split(/\n\s*\n/).map((paragraph, index) => (
+                  <Text key={index} selectable style={[styles.termsParagraph, { color: colors.text }]}>{paragraph}</Text>
+                ))}
+              </View>
             )}
           </ScrollView>
 
@@ -483,7 +491,8 @@ export default function AuthScreen() {
             onPress={() => {
               if (!termsScrolledToEnd || loadingTerms || !termsReady) return;
               setShowTerms(false);
-              setTimeout(() => void startDanSignUp(), 0);
+              if (Platform.OS === 'web') void startDanSignUp();
+              else setTimeout(() => void startDanSignUp(), 0);
             }}
             disabled={!termsScrolledToEnd || loadingTerms || !termsReady}
             activeOpacity={0.85}
@@ -493,6 +502,7 @@ export default function AuthScreen() {
             </Text>
           </TouchableOpacity>
         </SafeAreaView>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -631,12 +641,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: Platform.OS === "android" ? 24 : 0,
   },
+  termsBackdrop: {
+    flex: 1,
+    ...(Platform.OS === 'web' ? { backgroundColor: 'rgba(25, 14, 35, 0.55)', padding: 16, justifyContent: 'center', alignItems: 'center' } : {}),
+  },
+  termsWebCard: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 800,
+    maxHeight: '92%',
+    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
+    overflow: 'hidden',
+  },
   termsHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingTop: 8,
     paddingBottom: 12,
+    gap: 16,
   },
   termsTitle: {
     fontSize: 18,
@@ -650,8 +676,8 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   termsParagraph: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 25,
   },
   termsAcceptBtn: {
     paddingVertical: 14,

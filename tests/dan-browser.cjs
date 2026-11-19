@@ -38,3 +38,26 @@ test('iOS DAN browser retains its existing native auth-session options', async (
   await assert.rejects(flow.run(), /цуцлагдсан/);
   assert.equal(flow.options(), undefined);
 });
+test('web reserves the popup before waiting for the DAN server', async () => {
+  let opened=false;
+  const popup={closed:false,close(){this.closed=true;}};
+  const exports={};
+  const modules={
+    'expo-linking':{},
+    'react-native':{Platform:{OS:'web'}},
+    'expo-web-browser':{openAuthSessionAsync:async(url,callback,options)=>{
+      assert.equal(callback,'https://arivly.mn/dan-callback.html');
+      assert.equal(options.windowName,'arivly-dan-auth');
+      return {type:'cancel'};
+    }},
+    '@/lib/supabase':{supabase:{functions:{invoke:async(name,options)=>{
+      assert.equal(opened,true);
+      assert.equal(options.body.webOrigin,'https://arivly.mn');
+      return {data:{authorize_url:'https://sso.gov.mn/synthetic'}};
+    }}}}
+  };
+  const source=ts.transpileModule(fs.readFileSync('lib/danAuth.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+  vm.runInNewContext(source,{exports,require:name=>modules[name],window:{location:{origin:'https://arivly.mn'},open(){opened=true;return popup;}}});
+  await assert.rejects(exports.authenticateWithDan('sign_up'),/цуцлагдсан/);
+  assert.equal(popup.closed,true);
+});

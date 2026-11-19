@@ -8,7 +8,6 @@ export type HomeHeader = { logoUrl: string; logoAlt: string; locationTitle: stri
 export const DEFAULT_HOME_HEADER: HomeHeader = {
   logoUrl: '/logo.png', logoAlt: 'Arivly', locationTitle: 'Байршлаар нь олоорой',
   links: [
-    { id:'my-jobs',label:'Миний зарууд',href:'/my-jobs',enabled:true },
     { id:'locations',label:'Байршлаар',href:'/#locations',enabled:true },
     { id:'how',label:'Хэрхэн ажилладаг вэ?',href:'/#how-it-works',enabled:true },
   ],
@@ -26,9 +25,19 @@ export const HOME_STORE_LABELS = { appStore: 'App Store', googlePlay: 'Google Pl
 export const HOME_STORE_KEYS = ['appStore', 'googlePlay'] as const;
 type StoreRating = { count: number; average: number };
 type HomeStoreRatings = Partial<Record<typeof HOME_STORE_KEYS[number], StoreRating>>;
+export const DEFAULT_FOOTER_GUIDE = {
+  title: 'Түрээслэхээс өмнө',
+  intro: 'Хэрэгтэй зүйлээ олоод зарын эзэнд түрээсийн хүсэлт илгээгээрэй. Хүсэлтийг зөвшөөрсний дараа авах, буцаах нөхцлөө хамт тохирно.',
+  steps: 'Хэрэгтэй зүйлээ олоорой | Хайлт эсвэл ангиллаар үзээд тохирох зараа сонго.\nНөхцлөө тохиролцоорой | Үнэ, хугацаа, авах болон буцаах байршлаа эзэнтэй нь ярилцаарай.\nХамт шалгаж аваарай | Эд зүйлийн байдлыг хүлээн авахдаа хамт шалгаж тэмдэглээрэй.',
+  ctaTitle: 'Өдөр тутмын ухаалаг хэрэглээ',
+  browseLabel: 'Зар үзэх',
+  guideLabel: 'Төлбөртэй үйлчилгээ',
+  paymentNote: 'Зар онцлох зэрэг апп доторх үйлчилгээний төлбөрийг iOS дээр App Store-оор хийдэг. Arivly-ийн iOS аппд QPay сонголт байхгүй. Вэб болон Android дээр QPay ашиглах боломжтой.',
+};
+type HomeFooterGuide = typeof DEFAULT_FOOTER_GUIDE;
 export type HomePageContent = {
   schemaVersion: 1; announcement: string; footerText: string; header: HomeHeader;
-  socialLinks?: HomeSocialLinks; storeRatings?: HomeStoreRatings; sections: HomeBlock[];
+  socialLinks?: HomeSocialLinks; storeRatings?: HomeStoreRatings; footerGuide?: HomeFooterGuide; sections: HomeBlock[];
 };
 export const HOME_BLOCK_LABELS: Record<HomeBlockType, string> = {
   hero: 'Том нүүр зураг, хайлт', categories: 'Ангиллууд', catalog: 'Бодит зарын каталог',
@@ -39,7 +48,7 @@ export function newHomeBlock(type: HomeBlockType, id = `${type}-${Date.now()}-${
 }
 export const DEFAULT_HOME_PAGE: HomePageContent = {
   schemaVersion: 1,
-  announcement: 'Хэрэгтэйгээ түрээсэл. Байгаагаа түрээслүүл.',
+  announcement: 'Түрээслээд хэмнэ, түрээслүүлээд ашиг ол',
   footerText: 'Хэрэгтэй үедээ, хэрэгтэй бүхнээ.',
   header: DEFAULT_HOME_HEADER,
   sections: [
@@ -134,5 +143,12 @@ export function normalizeHomePage(value: unknown): HomePageContent {
       if (rating) storeRatings[store] = rating;
     }
   }
-  return { schemaVersion: 1, announcement: text(source.announcement, 300), footerText: text(source.footerText, 300), header, socialLinks, storeRatings, sections };
+  const footerGuide = { ...DEFAULT_FOOTER_GUIDE };
+  if (source.footerGuide && typeof source.footerGuide === 'object') {
+    const savedGuide = source.footerGuide as Record<string, unknown>;
+    for (const key of Object.keys(footerGuide) as (keyof HomeFooterGuide)[]) {
+      if (typeof savedGuide[key] === 'string') footerGuide[key] = text(savedGuide[key], key === 'steps' || key === 'paymentNote' ? 2400 : 500);
+    }
+  }
+  return { schemaVersion: 1, announcement: text(source.announcement, 300), footerText: text(source.footerText, 300), header, socialLinks, storeRatings, sections, footerGuide };
 }

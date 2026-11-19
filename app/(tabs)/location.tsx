@@ -265,7 +265,7 @@ export default function LocationScreen() {
 
       {showMap ? (
         <View style={styles.mapContainer}>
-          {Platform.OS !== "web" && MapView ? (
+          {MapView ? (
             <MapView
               ref={mapRef}
               style={styles.map}
@@ -302,7 +302,7 @@ export default function LocationScreen() {
             <View style={styles.map}>
               <View style={styles.webNote}>
                 <Text style={[styles.webNoteText, { color: colors.textSecondary }]}>
-                  📍 Газрын зураг нь зөвхөн утсан дээр ажиллана
+                  📍 Газрын зураг ачаалж байна…
                 </Text>
               </View>
             </View>

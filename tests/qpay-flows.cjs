@@ -12,7 +12,7 @@ function load(state={}) {
     auth:{getUser:async token=>({data:{user:token==='valid'?{id}:null}})},
     from(table) {
       const chain={select(){return chain;},eq(field,value){filters.push({table,field,value});return chain;},
-        update(value){writes.push(value);return chain;},
+        update(value){writes.push(value);return chain;}, order(){return chain;}, overlaps(field,value){filters.push({table,field,value});return chain;}, in(field,value){filters.push({table,field,value});return chain;}, async limit(){return {data:state.noOrder?[]:[{...order,qr_image:'saved-qr',plan_id:'weekly',bank_urls:[]}],error:null};},
         async single(){return {data:state.noOrder?null:order,error:null};},
         async maybeSingle(){return {data:state.wrongOwner?null:{id},error:null};},
         then(resolve){resolve({error:state.saveFail?new Error('db'):null});}};
@@ -71,3 +71,17 @@ test('unknown/other-owner order cannot be cancelled',async()=>{const f=load({noO
 test('creating invoice cannot be silently discarded',async()=>{const f=load({order:{status:'CREATING',invoice_id:null}});assert.equal((await f.call({action:'cancel',orderId:id})).status,409);assert.equal(f.requests.length,0);});
 test('payment racing with cancellation returns paid outcome',async()=>{const f=load({rows:[],cancelRace:true});assert.equal((await f.call({action:'cancel',orderId:id})).body.paid,true);});
 test('late callback after cancellation still verifies and grants payment',async()=>{const f=load({order:{status:'CANCELLED'}});assert.equal((await f.callback()).status,200);assert.ok(f.calls.some(c=>c.name==='finalize_qpay_service_order'));});
+test('pending invoice lookup is scoped to caller and selected listing, without provider requests',async()=>{
+ const f=load();
+ const r=await f.call({action:'pending',jobIds:[id]});
+ assert.equal(r.body.pending.planId,'weekly');
+ assert.equal(r.body.pending.invoice.orderId,id);
+ assert.ok(f.filters.some(x=>x.field==='user_id'&&x.value===id));
+ assert.ok(f.filters.some(x=>x.field==='job_ids'&&x.value[0]===id));
+ assert.equal(f.requests.length,0);
+ assert.equal(f.writes.length,0);
+});
+test('pending invoice lookup validates listing IDs',async()=>{
+ const f=load();
+ assert.equal((await f.call({action:'pending',jobIds:['invalid']})).status,400);
+});

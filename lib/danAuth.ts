@@ -37,9 +37,13 @@ function callbackParam(url: string, key: string) {
  * Client ID / Secret болон регистрийн дугаар энэ код руу огт орж ирдэггүй.
  */
 export async function authenticateWithDan(mode: DanMode, options?: { termsAccepted?: boolean }) {
+  const windowName = 'arivly-dan-auth';
+  const popup = Platform.OS === 'web' ? window.open('about:blank', windowName) : null;
+  if (Platform.OS === 'web' && !popup) throw new Error('DAN цонх нээгдсэнгүй. Дахин оролдоно уу.');
+  try {
   const { data: startData, error: startError } = await supabase.functions.invoke<StartResponse>(
     "dan-auth-start",
-    { body: { mode, termsAccepted: options?.termsAccepted === true } },
+    { body: { mode, termsAccepted: options?.termsAccepted === true, ...(Platform.OS === 'web' && { webOrigin: window.location.origin }) } },
   );
 
   if (startError || !startData?.authorize_url) {
@@ -48,11 +52,11 @@ export async function authenticateWithDan(mode: DanMode, options?: { termsAccept
 
   const browserResult = await WebBrowser.openAuthSessionAsync(
     startData.authorize_url,
-    DAN_CALLBACK_URL,
+    Platform.OS === 'web' ? `${window.location.origin}/dan-callback.html` : DAN_CALLBACK_URL,
     // Android's default hidden custom tab also uses FLAG_ACTIVITY_NO_HISTORY.
     // DAN opens the SMS app: preserve its browser task so returning from SMS
     // resumes authorization instead of destroying the tab and reporting cancel.
-    Platform.OS === "android" ? { createTask: true, showInRecents: true } : undefined,
+    Platform.OS === 'web' ? { windowName } : Platform.OS === "android" ? { createTask: true, showInRecents: true } : undefined,
   );
 
   if (browserResult.type !== "success") {
@@ -106,6 +110,9 @@ export async function authenticateWithDan(mode: DanMode, options?: { termsAccept
     userId: verified.user.id,
     linked: callbackParam(browserResult.url, "linked") === "1",
   };
+  } finally {
+    if (popup && !popup.closed) popup.close();
+  }
 }
 export async function finishDanSignUp(phone: string, password: string) {
   const { data, error } = await supabase.functions.invoke<FinishSignupResponse>(

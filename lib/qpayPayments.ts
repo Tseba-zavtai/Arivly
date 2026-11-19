@@ -37,7 +37,7 @@ export async function callQPay<T>(body: Record<string, unknown>): Promise<T> {
     try { result = await error.context.json(); } catch { /* network/invalid response */ }
   }
   if (error || result?.error) {
-    throw new Error(messages[result?.error] ?? "Төлбөрийн сервертэй холбогдож чадсангүй. Дахин оролдоно уу.");
+    throw Object.assign(new Error(messages[result?.error] ?? "Төлбөрийн сервертэй холбогдож чадсангүй. Дахин оролдоно уу."), { code: result?.error });
   }
   return result as T;
 }

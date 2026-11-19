@@ -78,9 +78,23 @@ export default function WebHome({contentOverride}:{contentOverride?:HomePageCont
     getPersonalScore: savedInterestScorer(jobs, savedJobIds),
   }), [jobs, savedJobIds]);
   const categoryId = categories.find(item => item.name === category)?.id;
-  const listings = useMemo(() => jobs.filter(job => {
-    if (job.isActive === false || job.is_active === false || job.deleted_at || isListingExpired(job)) return false;
-    if ((job.postType ?? 'job') !== 'job') return false;
+  const activeListings = useMemo(() => jobs.filter(job =>
+    job.isActive !== false && job.is_active !== false && !job.deleted_at && !isListingExpired(job) && (job.postType ?? 'job') === 'job'
+  ), [jobs]);
+  const popularSubcategories = useMemo(() => {
+    const counts = new Map<string, { category: string; subcategory: CatalogSubcategory; count: number }>();
+    for (const job of activeListings) {
+      const parent = categories.find(item => item.id === job.category_id) ?? categories.find(item => item.name === job.category);
+      const sub = parent?.subcategories.find(item => item.id === job.subcategory_id)
+        ?? parent?.subcategories.find(item => item.name === job.subcategory);
+      if (!parent || !sub) continue;
+      const entry = counts.get(sub.id);
+      if (entry) entry.count += 1;
+      else counts.set(sub.id, { category: parent.name, subcategory: sub, count: 1 });
+    }
+    return [...counts.values()].sort((a, b) => b.count - a.count || a.subcategory.name.localeCompare(b.subcategory.name, 'mn') || a.subcategory.id.localeCompare(b.subcategory.id)).slice(0, 3);
+  }, [activeListings, categories]);
+  const listings = useMemo(() => activeListings.filter(job => {
     if (category && job.category !== category && (!categoryId || job.category_id !== categoryId)) return false;
     if (subcategory && job.subcategory_id !== subcategory.id && job.subcategory !== subcategory.name) return false;
     return !query.trim() || [job.title, job.description, job.category, job.subcategory, job.location?.address].some(field => searchMatch(String(field ?? ''), query.trim()));
@@ -94,7 +108,7 @@ export default function WebHome({contentOverride}:{contentOverride?:HomePageCont
     }
     const timestamp = (job: Job) => Math.max(new Date(job.published_at ?? job.postedDate ?? 0).getTime() || 0, new Date(job.bumped_at ?? job.bumpedAt ?? 0).getTime() || 0);
     return timestamp(b) - timestamp(a);
-  }), [jobs, category, categoryId, subcategory, query, sort]);
+  }), [activeListings, category, categoryId, subcategory, query, sort]);
   const browse = () => {
     if (catalogOpen) catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     else setCatalogOpen(true);
@@ -125,7 +139,7 @@ export default function WebHome({contentOverride}:{contentOverride?:HomePageCont
     switch(block.type) {
       case 'hero': return (<section className="tw-hero">
       <div className="tw-hero-copy">
-        <span className="tw-eyebrow"><i /> {block.eyebrow}</span>
+        {block.eyebrow.trim() && <span className="tw-eyebrow"><i /> {block.eyebrow}</span>}
         <h1>{block.title}{block.accent && <><br /><em>{block.accent}</em></>}</h1>
         <p>{block.body}</p>
         <form className="tw-search" role="search" onSubmit={event => { event.preventDefault(); browse(); }}>
@@ -133,11 +147,14 @@ export default function WebHome({contentOverride}:{contentOverride?:HomePageCont
           <input aria-label="Түрээсийн зар хайх" placeholder="Юу түрээслэх вэ?" value={query} onChange={event => setQuery(event.target.value)} />
           <button type="submit" aria-label="Хайх">{block.buttonLabel || 'Хайх ↗'}</button>
         </form>
-        <div className="tw-popular"><span>Ангиллаар:</span>{['Багаж, тоног төхөөрөмж', 'Аялал, зугаалгын хэрэгсэл', 'Технологи, төхөөрөмж'].map(name => <button key={name} onClick={() => { setCategory(name); browse(); }}>{name.split(',')[0]}</button>)}</div>
+        {popularSubcategories.length > 0 && <div className="tw-popular">
+          <span>Ангиллаар:</span>
+          {popularSubcategories.map(({ category, subcategory }) => <button type="button" key={subcategory.id} onClick={() => { setQuery(''); setCategory(category, subcategory); browse(); }}>{subcategory.name}</button>)}
+        </div>}
       </div>
       {block.imageUrl ? <div className="tw-hero-custom-image"><img src={block.imageUrl} alt={block.title} /></div> : <>       <div className="tw-hero-art" aria-hidden="true">
         <div className="tw-orbit tw-orbit-one" /><div className="tw-orbit tw-orbit-two" />
-        <div className="tw-art-label">Бага эзэмш.<br />Ихийг бүтээ.</div>
+        <div className="tw-art-tag tw-art-tag-three"><span aria-hidden="true">+</span> Түрээсээр шийд</div>
         <div className="tw-object tw-object-camera"><svg viewBox="0 0 240 180"><path d="M30 55h40l13-20h65l15 20h40q17 0 17 17v76q0 17-17 17H30q-17 0-17-17V72q0-17 17-17" fill="#302638"/><rect x="25" y="70" width="185" height="25" rx="4" fill="#584365"/><circle cx="120" cy="108" r="49" fill="#17151e" stroke="#72627f" strokeWidth="7"/><circle cx="120" cy="108" r="33" fill="#463b64" stroke="#a79abd" strokeWidth="4"/><circle cx="120" cy="108" r="23" fill="#17182c"/><circle cx="110" cy="99" r="9" fill="#b5a1d8" opacity=".65"/><rect x="172" y="63" width="26" height="13" rx="3" fill="#ded5ea"/></svg></div>
         <div className="tw-object tw-object-bike">
           <svg viewBox="0 0 240 155">

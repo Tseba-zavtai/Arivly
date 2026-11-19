@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { DEFAULT_HOME_PAGE, HOME_BLOCK_LABELS, HOME_SOCIAL_KEYS, HOME_SOCIAL_LABELS, HOME_STORE_KEYS, HOME_STORE_LABELS, newHomeBlock, normalizeHomePage, normalizeStoreRating, safeHomeImage, safeHomeLink, safeHomeSocialLink, type HomeBlock, type HomeBlockType, type HomePageContent } from '@/lib/homePageContent';
+import { DEFAULT_FOOTER_GUIDE, DEFAULT_HOME_PAGE, HOME_BLOCK_LABELS, HOME_SOCIAL_KEYS, HOME_SOCIAL_LABELS, HOME_STORE_KEYS, HOME_STORE_LABELS, newHomeBlock, normalizeHomePage, normalizeStoreRating, safeHomeImage, safeHomeLink, safeHomeSocialLink, type HomeBlock, type HomeBlockType, type HomePageContent } from '@/lib/homePageContent';
 import { readHomePage, saveHomeDraft, publishHomeDraft, uploadHomeImage } from '@/lib/homePageStore';
 import WebHome from './WebHome';
 import './web.css';
@@ -9,6 +9,16 @@ import './editor.css';
 import { useQueryClient } from '@tanstack/react-query';
 import HomeHeaderEditor from './HomeHeaderEditor';
 import WebHeader from './WebHeader';
+
+const FOOTER_GUIDE_FIELDS = [
+  ['title', 'Зөвлөгөөний гарчиг'],
+  ['intro', 'Зааврын товч тайлбар'],
+  ['steps', 'Зөвлөгөө (мөр бүрт Гарчиг | Тайлбар)'],
+  ['ctaTitle', 'Доод туузны гарчиг'],
+  ['browseLabel', 'Зар үзэх товчны бичиг'],
+  ['guideLabel', 'Заавар нээх товчны бичиг'],
+  ['paymentNote', 'Төлбөрийн тайлбар'],
+] as const satisfies readonly (readonly [keyof typeof DEFAULT_FOOTER_GUIDE, string])[];
 
 export default function HomePageEditor() {
   const queryClient = useQueryClient();
@@ -131,6 +141,13 @@ export default function HomePageEditor() {
         <h2>Ерөнхий тохиргоо</h2>
         <label>Дээд туузны бичиг<input maxLength={300} value={content.announcement} onChange={event => setContent(previous => ({ ...previous, announcement: event.target.value }))} /></label>
         <label>Хөл хэсгийн тайлбар<input maxLength={300} value={content.footerText} onChange={event => setContent(previous => ({ ...previous, footerText: event.target.value }))} /></label>
+        <h2>Түрээсийн заавар ба доод хэсэг</h2>
+        {FOOTER_GUIDE_FIELDS.map(([key, label]) => <label key={key}>{label}
+          <textarea rows={key === 'paymentNote' ? 10 : key === 'steps' ? 5 : 2} maxLength={key === 'steps' || key === 'paymentNote' ? 2400 : 500}
+            value={(content.footerGuide ?? DEFAULT_FOOTER_GUIDE)[key]}
+            onChange={event => setContent(previous => ({ ...previous, footerGuide: { ...(previous.footerGuide ?? DEFAULT_FOOTER_GUIDE), [key]: event.target.value } }))} />
+          {key === 'paymentNote' && <small>Гарчгийг # тэмдгээр эхлүүлнэ. Үнийн мөрийг Нэр | Үнэ хэлбэрээр бичнэ.</small>}
+        </label>)}
         <h2>Сошиал холбоос</h2>
         <p>Албан ёсны хуудасныхаа HTTPS холбоосыг оруулаад нийтлээрэй.</p>
         {HOME_SOCIAL_KEYS.map(platform => <label key={platform}>{HOME_SOCIAL_LABELS[platform]}

@@ -69,6 +69,17 @@ function LegacyQPayPaymentScreen({ initialPlan, onBackToStore, directCheckout = 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [invoice, setInvoice] = useState<QPayInvoice | null>(null);
+  const mobileWeb = Platform.OS === 'web' && typeof navigator !== 'undefined'
+    && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const showBankButtons = Platform.OS !== 'web' || mobileWeb;
+  const openBank = (link: string) => {
+    if (Platform.OS === 'web') {
+      window.location.assign(link);
+      return;
+    }
+    void Linking.openURL(link).catch(() => Alert.alert('Банкны апп', 'Аппаа суулгасан эсэхийг шалгана уу.'));
+  };
   const [pendingPayment, setPendingPayment] = useState<{invoice:QPayInvoice;planId:string} | null>(null);
   const busy = useRef(false);
   const [restored, setRestored] = useState(false);
@@ -93,9 +104,11 @@ function LegacyQPayPaymentScreen({ initialPlan, onBackToStore, directCheckout = 
       try {
         const saved = JSON.parse(value);
         if (saved.invoice?.orderId && saved.planId) {
+          setPendingPayment(saved);
           const status=await callQPay<{paid:boolean;cancelled?:boolean}>({action:'status',orderId:saved.invoice.orderId});
           if (!mounted) return;
           if(status.paid || status.cancelled) {
+            setPendingPayment(current => current?.invoice.orderId === saved.invoice.orderId ? null : current);
             await AsyncStorage.removeItem(storageKey);
             await Promise.allSettled([refreshers.current.refetchProfile?.(),refreshers.current.loadJobs?.()]);
           } else setPendingPayment(saved);
@@ -110,6 +123,16 @@ function LegacyQPayPaymentScreen({ initialPlan, onBackToStore, directCheckout = 
     else setRestored(true);
     return () => { mounted = false; };
   }, [storageKey]);
+
+  const pendingScope = selectedIds.slice().sort().join(',');
+  useEffect(() => {
+    if (!user?.id) return;
+    let mounted = true;
+    void callQPay<{pending: {invoice: QPayInvoice; planId: string} | null}>({action:'pending',jobIds:targetType === 'credit' ? [] : selectedIds})
+      .then(result => { if (mounted && result.pending) setPendingPayment(result.pending); })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, [user?.id, pendingScope, targetType]);
 
   const selectedPlanData = useMemo(() => ALL_PLANS.find((p) => p.id === selectedPlan) ?? null, [selectedPlan]);
   const selectedJob = useMemo(() => (jobs as any[]).find((j) => String(j?.id) === String(jobId)) ?? null, [jobs, jobId]);
@@ -134,6 +157,7 @@ function LegacyQPayPaymentScreen({ initialPlan, onBackToStore, directCheckout = 
 
   const handleGenerateInvoice = async () => {
     if (!selectedPlanData || busy.current) return;
+    if (pendingPayment) { setInvoice(pendingPayment.invoice); setSelectedPlan(pendingPayment.planId); setStep('invoice'); return; }
     if (!user?.id) { Alert.alert('Төлбөр','Эхлээд нэвтэрнэ үү.'); return; }
     busy.current = true;
     setIsSubmitting(true);
@@ -143,7 +167,15 @@ function LegacyQPayPaymentScreen({ initialPlan, onBackToStore, directCheckout = 
       setInvoice(data); setStep("invoice");
       setPendingPayment({invoice:data,planId:selectedPlanData.id});
       if (storageKey) await AsyncStorage.setItem(storageKey,JSON.stringify({invoice:data,planId:selectedPlanData.id})).catch(() => {});
-    } catch(error:any) { Alert.alert("Төлбөр",error.message); }
+    } catch(error:any) {
+      if (error.code === 'PENDING_PAYMENT') {
+        try {
+          const result=await callQPay<{pending: {invoice:QPayInvoice;planId:string}|null}>({action:'pending',jobIds:selectedIds});
+          if(result.pending){setPendingPayment(result.pending);setStep('info');return;}
+        } catch { /* Keep the original payment error visible. */ }
+      }
+      Alert.alert("Төлбөр",error.message);
+    }
     finally { busy.current=false; setIsSubmitting(false); }
   };
 
@@ -304,23 +336,22 @@ function LegacyQPayPaymentScreen({ initialPlan, onBackToStore, directCheckout = 
 
         {step === "invoice" && (
           <View style={[styles.invoiceCard, { backgroundColor: colors.background }]}>
-            <Text style={[styles.invoiceTitle, { color: colors.text }]}>QPay invoice бэлэн боллоо</Text>
-            <Text style={[styles.invoiceDesc, { color: colors.textSecondary }]}>
-               Доорх сувгуудаас өөрийн ашигладаг банкны аппликейшнийг сонгон төлбөрөө баталгаажуулна уу.
-            </Text>
-
+            <Text style={[styles.invoiceTitle, { color: colors.text }]}>QPay нэхэмжлэл бэлэн боллоо</Text>
             <View style={styles.qrContainer}>
               {invoice?.qr_image && <Image source={{uri:`data:image/png;base64,${invoice.qr_image}`}} style={{width:220,height:220}} />}
             </View>
+            <Text style={[styles.invoiceDesc, { color: colors.textSecondary }]}>
+              {showBankButtons ? 'Доорх банкны товчийг дарж суулгасан апп-аараа төлөөрэй. Төлсний дараа Arivly руу буцаж «Төлөв шалгах» дарна уу.' : 'QR кодыг банкны апп-аар уншуулж төлбөрөө төлөөрэй. Төлсний дараа «Төлөв шалгах» дарна уу. «Хаах» нь нэхэмжлэлийг хадгална. Төлөхөө болих бол «Нэхэмжлэл цуцлах» сонгоорой.'}
+            </Text>
 
-            <View style={styles.banksGrid}>
+            {showBankButtons && <View style={styles.banksGrid}>
               {(invoice?.urls ?? []).map((bank, idx) => (
-                <TouchableOpacity key={idx} style={[styles.bankItem, { backgroundColor: colors.backgroundSecondary }]} onPress={() => Linking.openURL(bank.link).catch(() => Alert.alert("Банкны апп","Аппаа суулгасан эсэхийг шалгана уу."))} disabled={isSubmitting}>
+                <TouchableOpacity key={idx} style={[styles.bankItem, { backgroundColor: colors.backgroundSecondary }]} onPress={() => openBank(bank.link)} disabled={isSubmitting}>
                   <Image source={{ uri: bank.logo }} style={styles.bankLogo} />
                   <Text style={[styles.bankName, { color: colors.text }]} numberOfLines={1}>{bank.name}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </View>}
 
             <View style={styles.invoiceActions}>
               <TouchableOpacity style={[styles.actionBtnCheck, { backgroundColor: colors.backgroundSecondary }]} onPress={() => checkPaymentStatus()} disabled={isSubmitting}>

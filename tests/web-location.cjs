@@ -35,7 +35,7 @@ test('legacy CMS drafts keep their content and get editable header defaults; uns
  const upgraded=content.normalizeHomePage(previous);
  assert.equal(upgraded.sections[0].title,'Миний гарчиг');
  assert.equal(upgraded.announcement,'Миний бичиг');
- assert.equal(upgraded.header.links[1].href,'/#locations');
+ assert.equal(upgraded.header.links.find(link=>link.id==='locations').href,'/#locations');
  const edited=content.normalizeHomePage({...previous,header:{logoUrl:'javascript:x',logoAlt:'Лого',links:[{id:'bad',label:'Муу',href:'javascript:x'},{id:'ok',label:'Нөхцөл',href:'/help/terms',enabled:false}]}});
  assert.equal(edited.header.logoUrl,'/logo.png');
  assert.equal(edited.header.links.length,1);

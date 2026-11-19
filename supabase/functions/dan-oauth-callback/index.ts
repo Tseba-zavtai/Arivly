@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import {
   adminClient,
-  appCallbackUrl,
   getDanCitizen,
   getDanConfig,
   hmacSha256,
@@ -15,16 +14,24 @@ type AuthState = {
   mode: "sign_in" | "sign_up" | "link";
   link_user_id: string | null;
   terms_accepted_at: string | null;
+  web_origin: string | null;
 };
 
 serve(async (req: Request) => {
+  let webOrigin: string | null = null;
+  const redirect = (params: Record<string, string>) => {
+    if (!webOrigin) return redirectToApp(params);
+    const target = new URL('/dan-callback.html', webOrigin);
+    for (const [key, value] of Object.entries(params)) target.searchParams.set(key, value);
+    return new Response(null, { status: 302, headers: { Location: target.href, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } });
+  };
   const url = new URL(req.url);
   const providerError = url.searchParams.get("error");
   const code = url.searchParams.get("code")?.trim() ?? "";
   const rawState = url.searchParams.get("state")?.trim() ?? "";
 
-  if (providerError || !code || !rawState) {
-    return redirectToApp({ error: "cancelled_or_invalid" });
+  if (!rawState) {
+    return redirect({ error: "cancelled_or_invalid" });
   }
 
   try {
@@ -40,12 +47,14 @@ serve(async (req: Request) => {
       .eq("state_hash", stateHash)
       .is("consumed_at", null)
       .gt("expires_at", now)
-      .select("mode, link_user_id, terms_accepted_at")
+      .select("mode, link_user_id, terms_accepted_at, web_origin")
       .maybeSingle<AuthState>();
 
     if (stateError || !state) {
-      return redirectToApp({ error: "expired_or_invalid" });
+      return redirect({ error: "expired_or_invalid" });
     }
+    webOrigin = state.web_origin === 'https://arivly.mn' || state.web_origin === 'https://www.arivly.mn' ? state.web_origin : null;
+    if (providerError || !code) return redirect({ error: 'cancelled_or_invalid' });
 
     const accessToken = await exchangeDanCode(config, code);
     const citizen = await getDanCitizen(accessToken);
@@ -68,7 +77,7 @@ serve(async (req: Request) => {
         .select("dan_onboarding_completed_at").eq("id", userId).single();
       if (error) throw error;
       if (profile.dan_onboarding_completed_at) {
-        return redirectToApp({ error: "identity_already_registered" });
+        return redirect({ error: "identity_already_registered" });
       }
       const { error: consentError } = await admin.from("users")
         .update({ terms_accepted_at: state.terms_accepted_at }).eq("id", userId);
@@ -78,7 +87,7 @@ serve(async (req: Request) => {
     if (state.mode === "link") {
       if (!state.link_user_id) throw new Error("Link target is missing.");
       if (userId && userId !== state.link_user_id) {
-        return redirectToApp({ error: "identity_already_linked" });
+        return redirect({ error: "identity_already_linked" });
       }
 
       userId = state.link_user_id;
@@ -101,7 +110,7 @@ serve(async (req: Request) => {
       // Legacy account өөрөө DAN-аар sign in хийхэд шинэ account битгий үүсгэ.
       // Эхлээд тухайн хуучин account-аасаа Profile → DAN-аар баталгаажуулах ёстой.
       if (state.mode === "sign_in") {
-        return redirectToApp({ error: "identity_not_linked" });
+        return redirect({ error: "identity_not_linked" });
       }
       const { data: createdUser, error: createUserError } = await admin.auth.admin.createUser({
         email: `dan-${crypto.randomUUID()}@identity.tureesly.invalid`,
@@ -150,13 +159,10 @@ serve(async (req: Request) => {
     });
     if (handoffError) throw new Error("Unable to finish DAN sign-in.");
 
-    return redirectToApp({ handoff: rawHandoff, linked: state.mode === "link" ? "1" : "0" });
+    return redirect({ handoff: rawHandoff, linked: state.mode === "link" ? "1" : "0" });
   } catch (error) {
     console.error("dan-oauth-callback failed", error instanceof Error ? error.message : "unknown");
     // Техникийн дэлгэрэнгүйг deep link болон browser history-д гаргахгүй.
-    return new Response(null, {
-      status: 302,
-      headers: { Location: appCallbackUrl({ error: "sign_in_failed" }), "Cache-Control": "no-store" },
-    });
+    return redirect({ error: 'sign_in_failed' });
   }
 });

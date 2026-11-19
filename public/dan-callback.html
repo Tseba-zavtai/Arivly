@@ -1,0 +1,8 @@
+<!doctype html><html lang="mn"><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Arivly — Нэвтэрч байна</title><p>Нэвтрэлтийг баталгаажуулж байна…</p><script>
+const handle = localStorage.getItem('ExpoWebBrowserRedirectHandle');
+if (handle) {
+  const url = location.href;
+  localStorage.setItem('ExpoWebBrowser_OriginUrl_' + handle, url);
+  if (window.opener) window.opener.postMessage({expoSender: handle, url}, location.origin);
+}
+</script></html>

@@ -114,12 +114,12 @@ serve(async (req: Request) => {
     });
 
     const expoResult = await expoResponse.json().catch(() => null);
-    const ticket = Array.isArray(expoResult?.data) ? expoResult.data[0] : null;
-    if (!expoResponse.ok || ticket?.status === "error") {
+    const ticket = Array.isArray(expoResult?.data) ? expoResult.data[0] : expoResult?.data;
+    if (!expoResponse.ok || ticket?.status !== "ok" || typeof ticket?.id !== 'string' || !ticket.id) {
       return json({ error: ticket?.message ?? "Expo push delivery failed" }, 502);
     }
 
-    return json({ delivered: true, ticketId: ticket?.id ?? null });
+    return json({ delivered: true, ticketId: ticket.id });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Unknown error" }, 500);
   }

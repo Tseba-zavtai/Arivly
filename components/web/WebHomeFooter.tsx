@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { Link } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { LockKeyhole, Smartphone } from 'lucide-react-native';
-import { getCombinedStoreRating, HOME_SOCIAL_KEYS, HOME_SOCIAL_LABELS, safeHomeSocialLink, type HomePageContent, type HomeSocial } from '@/lib/homePageContent';
+import { DEFAULT_FOOTER_GUIDE, getCombinedStoreRating, HOME_SOCIAL_KEYS, HOME_SOCIAL_LABELS, safeHomeSocialLink, type HomePageContent, type HomeSocial } from '@/lib/homePageContent';
 import { supabase } from '@/lib/supabase';
 
 function SocialIcon({ platform }: { platform: HomeSocial }) {
@@ -20,6 +20,13 @@ const publicHome = 'https://arivly.mn/';
 
 export default function WebHomeFooter({ page, onBrowse }: { page: HomePageContent; onBrowse: () => void }) {
   const [shareStatus, setShareStatus] = useState('');
+  const guideDialog = useRef<HTMLDialogElement>(null);
+  const guideTitleId = useId();
+  const guide = page.footerGuide ?? DEFAULT_FOOTER_GUIDE;
+  const steps = guide.steps.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+    const [title, ...body] = line.split('|');
+    return { title: title.trim(), body: body.join('|').trim() };
+  });
   const { data: facebook } = useQuery({
     queryKey: ['web-footer-facebook'],
     enabled: page.socialLinks?.facebook === undefined,
@@ -47,22 +54,36 @@ export default function WebHomeFooter({ page, onBrowse }: { page: HomePageConten
 
   return <footer className="tw-site-footer">
     <section className="tw-footer-care" id="how-it-works">
-      <h2>Түрээслэхээс өмнө</h2>
-      <p className="tw-how-intro">Хэрэгтэй эд зүйлээ олоод, зарын эзэнд түрээсийн хүсэлт илгээнэ. Эзэн зөвшөөрвөл авах, буцаах нөхцлөө хамт тохирно.</p>
+      <h2>{guide.title}</h2>
+      <p className="tw-how-intro">{guide.intro}</p>
       <div>
-        <p><strong>Хүссэнээ ол</strong><br />Хайлтаар эсвэл ангиллаар үзэж, өөрт хэрэгтэй зараа сонгоорой.</p>
-        <p><strong>Нөхцлөө тохиролцоорой</strong><br />Үнэ, хугацаа, авах болон буцаах байршлаа эзэнтэй нь ярилцаарай.</p>
-        <p><strong>Шалгаж аваарай</strong><br />Эд зүйлийн байдлыг хүлээн авахдаа хамт шалгаж тэмдэглээрэй.</p>
+        {steps.map(({ title, body }, index) => <p key={index}><strong>{title}</strong>{body && <><br />{body}</>}</p>)}
       </div>
     </section>
     <section className="tw-footer-cta">
-      <div><h2>Түрээслэхэд бэлэн үү?</h2><p>{page.footerText}</p></div>
+      <div><h2>{guide.ctaTitle}</h2><p>{page.footerText}</p></div>
       <div className="tw-footer-actions">
-        <button type="button" className="tw-button" onClick={onBrowse}>Зар үзэх</button>
-        <button type="button" className="tw-footer-secondary" onClick={() =>
-          document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Хэрхэн ажилладаг вэ?</button>
+        <button type="button" className="tw-button" onClick={onBrowse}>{guide.browseLabel}</button>
+        <button type="button" className="tw-footer-secondary" aria-haspopup="dialog" onClick={() => guideDialog.current?.showModal()}>{guide.guideLabel}</button>
       </div>
     </section>
+    <dialog className="tw-system-announcement tw-footer-guide" ref={guideDialog} aria-labelledby={guideTitleId}>
+      <h2 id={guideTitleId}>{guide.guideLabel}</h2>
+      {guide.paymentNote && <section className="tw-paid-services">
+        {guide.paymentNote.split('\n').map((line, index) => {
+          const text = line.trim();
+          if (!text) return null;
+          if (text.startsWith('# ')) return <h3 key={index}>{text.slice(2)}</h3>;
+          const separator = text.lastIndexOf('|');
+          if (separator < 0) return <p key={index}>{text}</p>;
+          return <div className="tw-paid-services-row" key={index}>
+            <span>{text.slice(0, separator).trim()}</span>
+            <strong>{text.slice(separator + 1).trim()}</strong>
+          </div>;
+        })}
+      </section>}
+      <form method="dialog"><button className="tw-button tw-button-small" type="submit">Хаах</button></form>
+    </dialog>
     <div className="tw-footer-share">
       <div className="tw-footer-share-main">
         <strong>Arivly-г найздаа танилцуулаарай</strong>

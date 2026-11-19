@@ -61,6 +61,17 @@ Deno.serve(async req => {
   let body;
   try { body=await req.json(); } catch { return reply({error:"INVALID_REQUEST"},400); }
   if(!body || typeof body !== 'object') return reply({error:"INVALID_REQUEST"},400);
+  if(body.action === 'pending') {
+   const ids = body.jobIds;
+   if(!Array.isArray(ids) || ids.length > 100 || ids.some((id:unknown) => typeof id !== 'string' || !uuid.test(id))) return reply({error:'INVALID_JOB'},400);
+   let query = db.from('qpay_service_orders').select('id,plan_id,amount,qr_image,bank_urls,job_ids,job_id').eq('user_id',user.id).eq('status','PENDING').order('created_at',{ascending:false});
+   if(ids.length) query=query.overlaps('job_ids',ids);
+   else query=query.in('plan_id',['credit','credit2','credit3']);
+   const {data,error}=await query.limit(1);
+   if(error) throw new Error('PAYMENT_CHECK_FAILED');
+   const order=data?.[0];
+   return reply({pending:order?.qr_image ? {planId:order.plan_id,invoice:{orderId:order.id,amount:Number(order.amount),qr_image:order.qr_image,urls:order.bank_urls ?? []}} : null});
+  }
   if(body.action === "status") {
    if(typeof body.orderId !== 'string' || !uuid.test(body.orderId)) return reply({error:"INVALID_ORDER"},400);
    const {data,error}=await db.from("qpay_service_orders").select("status").eq("id",body.orderId).eq("user_id",user.id).single();

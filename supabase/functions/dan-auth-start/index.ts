@@ -10,7 +10,7 @@ import {
   sha256,
 } from "../_shared/dan.ts";
 
-type StartBody = { mode?: "sign_in" | "sign_up" | "link"; termsAccepted?: boolean; };
+type StartBody = { mode?: "sign_in" | "sign_up" | "link"; termsAccepted?: boolean; webOrigin?: string; };
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -24,6 +24,8 @@ serve(async (req: Request) => {
   try {
     const config = getDanConfig();
     const body = (await req.json().catch(() => ({}))) as StartBody;
+    const webOrigin = body.webOrigin === 'https://arivly.mn' || body.webOrigin === 'https://www.arivly.mn' ? body.webOrigin : null;
+    if (body.webOrigin && !webOrigin) return json({ error: 'invalid_web_origin' }, 400);
     const mode = body.mode === "link" ? "link" : body.mode === "sign_up" ? "sign_up" : "sign_in";
     if (mode === "sign_up" && body.termsAccepted !== true) {
       return json({ error: "terms_acceptance_required" }, 400);
@@ -45,6 +47,7 @@ serve(async (req: Request) => {
     const { error } = await admin.from("dan_auth_states").insert({
       state_hash: stateHash,
       mode,
+      web_origin: webOrigin,
       link_user_id: linkUserId,
       terms_accepted_at: mode === "sign_up" ? new Date().toISOString() : null,
       expires_at: expiresAt,

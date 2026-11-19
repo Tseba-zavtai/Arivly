@@ -115,6 +115,11 @@ function sanitizeFileNamePart(value: string) {
 }
 
 async function uriToArrayBuffer(uri: string): Promise<ArrayBuffer> {
+  if (Platform.OS === 'web') {
+    const response = await fetch(uri);
+    if (!response.ok) throw new Error('Зургийг уншиж чадсангүй. Дахин сонгоно уу.');
+    return response.arrayBuffer();
+  }
   return new File(uri).arrayBuffer();
 }
 
@@ -349,8 +354,35 @@ export default function PostScreen() {
   }, []);
 
   const handlePickImages = useCallback(async () => {
-    if (Platform.OS === "web") { Alert.alert("Мэдээлэл", "Зураг сонгох хэсгийг одоогоор апп дээр ашиглана уу"); return; }
     if (pickedImages.length >= MAX_IMAGES) { Alert.alert("Анхаар", `Та хамгийн ихдээ ${MAX_IMAGES} зураг сонгох боломжтой`); return; }
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/jpeg,image/png,image/webp';
+      input.multiple = true;
+      input.onchange = async () => {
+        const files = Array.from(input.files ?? []).slice(0, MAX_IMAGES - pickedImages.length);
+        if (!files.length) return;
+        setPickingImages(true);
+        const urls = files.map(file => URL.createObjectURL(file));
+        try {
+          const images = await Promise.all(urls.map(async (uri, index) => {
+            const image = document.createElement('img');
+            image.src = uri;
+            await image.decode();
+            return compressPickedImage({ uri, width: image.naturalWidth }, index);
+          }));
+          setPickedImages(previous => [...previous, ...images].slice(0, MAX_IMAGES));
+        } catch {
+          Alert.alert('Зураг', 'Зургийг уншиж чадсангүй. JPG, PNG эсвэл WebP зураг сонгоно уу.');
+        } finally {
+          urls.forEach(uri => URL.revokeObjectURL(uri));
+          setPickingImages(false);
+        }
+      };
+      input.click();
+      return;
+    }
     try {
       setPickingImages(true);
       const ImagePicker = await import("expo-image-picker");
@@ -542,12 +574,12 @@ export default function PostScreen() {
       
       <AppHeader title="Зар нэмэх" showBack={false} />
 
-      <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <KeyboardAvoidingView style={[styles.keyboardView, Platform.OS === 'web' && { maxWidth: '100%', width: '100%' }]} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView
           ref={formScrollRef}
           style={styles.content}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.contentContainer}
+          contentContainerStyle={[styles.contentContainer, Platform.OS === 'web' && { width: '100%', maxWidth: 1160, alignSelf: 'center' }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           nestedScrollEnabled
@@ -738,7 +770,7 @@ export default function PostScreen() {
 
           <View style={styles.formSection}>
             <Text style={[styles.label, { color: colors.text }]}>Байршил (заавал биш)</Text>
-            {Platform.OS !== "web" && MapView ? (
+            {MapView ? (
               <>
                 <Text style={[styles.helperText, { color: colors.textSecondary }]}>Газрын зураг дээр дарж байршил сонгоно уу</Text>
                 <View style={[styles.mapContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -746,7 +778,7 @@ export default function PostScreen() {
                 </View>
                 {selectedLocation?.address ? (<Text style={[styles.selectedLocationText, { color: colors.text, backgroundColor: colors.card, borderColor: colors.border }]}>Сонгосон байршил: {selectedLocation.address}</Text>) : null}
               </>
-            ) : (<View style={[styles.webLocationNote, { backgroundColor: colors.card, borderColor: colors.border }]}><Text style={[styles.webLocationNoteText, { color: colors.textSecondary }]}>📍 Газрын зураг нь зөвхөн утсан дээр ажиллана</Text></View>)}
+            ) : (<View style={[styles.webLocationNote, { backgroundColor: colors.card, borderColor: colors.border }]}><Text style={[styles.webLocationNoteText, { color: colors.textSecondary }]}>📍 Газрын зураг ачаалж байна…</Text></View>)}
           </View>
 
           <TouchableOpacity style={[styles.submitButton, { backgroundColor: postCredits <= 0 ? colors.border : colors.primary, opacity: submitting ? 0.75 : 1 }]} onPress={() => void handleSubmit()} activeOpacity={0.85} disabled={submitting}>
@@ -886,8 +918,8 @@ const styles = StyleSheet.create({
   clearSelectionText: { fontSize: 13, fontWeight: "600" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)", justifyContent: "flex-end" },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.35)" },
-  modalKeyboardWrap: { flex: 1, justifyContent: "flex-end" },
-  modalSheet: { maxHeight: "82%", borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingTop: 10, paddingHorizontal: 20, paddingBottom: 24 },
+  modalKeyboardWrap: { flex: 1, justifyContent: Platform.OS === "web" ? "center" : "flex-end", ...(Platform.OS === "web" ? { alignItems: "center", padding: 16 } : {}) },
+  modalSheet: { ...(Platform.OS === "web" ? { width: "100%", maxWidth: 600, borderRadius: 20 } : {}), maxHeight: "82%", borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingTop: 10, paddingHorizontal: 20, paddingBottom: 24 },
   modalHandle: { width: 42, height: 4, borderRadius: 999, backgroundColor: "rgba(150,150,150,0.55)", alignSelf: "center", marginBottom: 12 },
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   modalTitle: { fontSize: 17, fontWeight: "800" },
