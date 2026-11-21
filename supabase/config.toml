@@ -404,7 +404,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-rental-request-push]
-verify_jwt = true
+verify_jwt = false
+
+[functions.rental-push-worker]
+verify_jwt = false
 
 [functions.dan-auth-start]
 verify_jwt = false

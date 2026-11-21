@@ -76,50 +76,10 @@ serve(async (req: Request) => {
       return json({ delivered: false, reason: "owner_missing" });
     }
 
-    const { data: owner, error: ownerError } = await admin
-      .from("users")
-      .select("expo_push_token")
-      .eq("id", rentalRequest.owner_id)
-      .maybeSingle();
+    // The rental/notification transaction already enqueued delivery. Old clients
+    // may still call this endpoint; never send a second untracked notification.
+    return json({ queued: true, delivered: false });
 
-    if (ownerError) {
-      return json({ error: ownerError.message }, 500);
-    }
-    if (!isExpoPushToken(owner?.expo_push_token)) {
-      return json({ delivered: false, reason: "push_token_missing" });
-    }
-
-    const { data: job } = await admin
-      .from("jobs")
-      .select("title")
-      .eq("id", rentalRequest.job_id)
-      .maybeSingle();
-
-    const jobTitle = typeof job?.title === "string" && job.title.trim() ? job.title.trim() : "зар";
-    const requesterName = typeof caller.user_metadata?.name === "string" && caller.user_metadata.name.trim()
-      ? caller.user_metadata.name.trim()
-      : "Хэрэглэгч";
-
-    const expoResponse = await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        to: owner.expo_push_token,
-        sound: "default",
-        title: "Шинэ түрээсийн хүсэлт",
-        body: requesterName + " таны " + jobTitle + " зарыг түрээслэх хүсэлт илгээлээ.",
-        channelId: "default",
-        data: { url: "/rental-requests?requestId=" + encodeURIComponent(rentalRequest.id) },
-      }),
-    });
-
-    const expoResult = await expoResponse.json().catch(() => null);
-    const ticket = Array.isArray(expoResult?.data) ? expoResult.data[0] : expoResult?.data;
-    if (!expoResponse.ok || ticket?.status !== "ok" || typeof ticket?.id !== 'string' || !ticket.id) {
-      return json({ error: ticket?.message ?? "Expo push delivery failed" }, 502);
-    }
-
-    return json({ delivered: true, ticketId: ticket.id });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Unknown error" }, 500);
   }

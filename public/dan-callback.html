@@ -3,6 +3,13 @@ const handle = localStorage.getItem('ExpoWebBrowserRedirectHandle');
 if (handle) {
   const url = location.href;
   localStorage.setItem('ExpoWebBrowser_OriginUrl_' + handle, url);
-  if (window.opener) window.opener.postMessage({expoSender: handle, url}, location.origin);
+  if (window.opener) {
+    const send = () => window.opener.postMessage({expoSender: handle, url}, location.origin);
+    send();
+    // The redirect can arrive before Expo finishes registering its listener.
+    // Repeat briefly; the parent closes this popup after receiving the result.
+    const timer = setInterval(send, 500);
+    setTimeout(() => clearInterval(timer), 120000);
+  }
 }
 </script></html>

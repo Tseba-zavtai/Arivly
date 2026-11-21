@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Alert, AppState, Linking, Platform } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, AppState, Linking, Platform, Modal, View, Text, TouchableOpacity } from 'react-native';
 import { applicationId, nativeApplicationVersion } from 'expo-application';
 import { requireOptionalNativeModule } from 'expo';
 import { useAppLock } from '@/contexts/AppLockContext';
@@ -43,7 +43,7 @@ export default function StoreUpdatePrompt() {
   const { isAppLockReady, isLocked } = useAppLock();
   const { isLoading } = useAuth();
   const lastCheck = useRef(0);
-  const lastPrompt = useRef<string | null>(null);
+  const [requiredUpdate, setRequiredUpdate] = useState<{ version: string; url: string } | null>(null);
 
   useEffect(() => {
     if (__DEV__ || Platform.OS === 'web' || isLoading || !isAppLockReady || isLocked) return;
@@ -64,19 +64,7 @@ export default function StoreUpdatePrompt() {
           lastCheck.current = 0;
           return;
         }
-        if (!update || lastPrompt.current === update.version) return;
-        lastPrompt.current = update.version;
-        Alert.alert('Шинэ хувилбар гарлаа', 'Arivly-г шинэчилж үргэлжлүүлэх үү?', [
-          { text: 'Дараа', style: 'cancel' },
-          {
-            text: 'Шинэчлэх',
-            onPress: () => {
-              void Linking.openURL(update.url).catch(() => {
-                Alert.alert('Дэлгүүр нээгдсэнгүй', 'Дэлгүүрээс Arivly гэж хайгаад шинэчлээрэй.');
-              });
-            },
-          },
-        ], { cancelable: true });
+        if (update) setRequiredUpdate(update);
       } catch {
         // An offline device or unavailable store can continue using the app.
       } finally {
@@ -100,5 +88,15 @@ export default function StoreUpdatePrompt() {
     };
   }, [isLoading, isAppLockReady, isLocked]);
 
-  return null;
+  return <Modal visible={Boolean(requiredUpdate) && !isLoading && isAppLockReady && !isLocked} transparent animationType="fade" onRequestClose={() => {}}>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.55)', padding: 24 }}>
+      <View style={{ width: '100%', maxWidth: 420, backgroundColor: '#fff', borderRadius: 24, padding: 28, gap: 18 }}>
+        <Text style={{ fontSize: 22, fontWeight: '700', color: '#251630' }}>Шинэчлэх шаардлагатай</Text>
+        <Text style={{ fontSize: 16, lineHeight: 24, color: '#51465a' }}>Arivly-ийн шинэ хувилбар гарсан байна. Бүртгэл, хүсэлт болон мэдэгдлээ хэвийн ашиглахын тулд дэлгүүрээс шинэчлээрэй.</Text>
+        <TouchableOpacity accessibilityRole="button" onPress={() => { if (requiredUpdate) void Linking.openURL(requiredUpdate.url).catch(() => Alert.alert('Дэлгүүр нээгдсэнгүй', 'Дэлгүүрээс Arivly гэж хайгаад шинэчлээрэй.')); }} style={{ backgroundColor: '#6E0AB0', borderRadius: 12, padding: 16, alignItems: 'center' }}>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Дэлгүүрээс шинэчлэх</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>;
 }

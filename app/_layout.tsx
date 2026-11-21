@@ -19,6 +19,7 @@ import * as SystemUI from "expo-system-ui";
 import AndroidLaunchBrand from "@/components/AndroidLaunchBrand";
 import { StorePurchaseProvider } from "@/contexts/StorePurchaseContext";
 import StoreUpdatePrompt from "@/components/StoreUpdatePrompt";
+import { savePushDevice } from '@/lib/pushDevice';
 
 const queryClient = new QueryClient();
 
@@ -59,9 +60,13 @@ async function registerForPushNotificationsAsync() {
     }
     
     try {
-      token = (await Notifications.getExpoPushTokenAsync({ 
-        projectId: "40307900-5fec-4877-a667-4813c7e8c7bb" 
-      })).data;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        token = (await Promise.race([
+          Notifications.getExpoPushTokenAsync({ projectId: "40307900-5fec-4877-a667-4813c7e8c7bb" }),
+          new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('Push registration timeout')), 15000); }),
+        ])).data;
+      } finally { clearTimeout(timer); }
     } catch (error) {
       console.log("Push token авахад алдаа гарлаа:", error);
     }
@@ -78,7 +83,7 @@ function useNotificationObserver() {
     const openNotificationTarget = (notification: Notifications.Notification) => {
       const url = notification.request.content.data?.url;
       if (typeof url === "string" && url.startsWith("/")) {
-        router.push(url as any);
+        if (url.startsWith('/rental-requests') || url.startsWith('/notifications')) router.push(url as any);
       }
     };
 
@@ -119,29 +124,22 @@ function RootLayoutNav() {
   }, [isAuthenticated, refetchProfile]);
 
   useEffect(() => {
+    if (Platform.OS === 'web' || isLoading || !isAuthenticated || !user?.id) return;
+    const userId = user.id;
+    let stopped = false, busy = false;
     async function setupNotifications() {
-      if (isAuthenticated && user?.id) {
+      if (stopped || busy || AppState.currentState !== 'active') return;
+      busy = true;
+      try {
         const token = await registerForPushNotificationsAsync();
-        
-        if (token) {
-          // 🎯 ЗАСВАР: Хэрэглэгчийн токен хадгалах хүснэгтийг 'users' болгож засав (Баазын бүтэцтэй уялдуулав)
-          const { error } = await supabase
-            .from('users') 
-            .update({ expo_push_token: token })
-            .eq('id', user.id);
-            
-          if (error) {
-            console.log("Token бааз руу хадгалахад алдаа:", error.message);
-          } else {
-            console.log("Глобал систем дээр Push Token бүртгэгдлээ:", token);
-          }
-        }
-      }
+        if (token && !stopped) await savePushDevice(token, userId);
+      } catch { console.warn('Push registration deferred; retrying on next foreground.'); }
+      finally { busy = false; }
     }
-
-    if (!isLoading) {
-      setupNotifications();
-    }
+    void setupNotifications();
+    const resume = AppState.addEventListener('change', state => { if (state === 'active') void setupNotifications(); });
+    const rotated = Notifications.addPushTokenListener(() => { void setupNotifications(); });
+    return () => { stopped = true; resume.remove(); rotated.remove(); };
   }, [isAuthenticated, isLoading, user?.id]);
 
   return (

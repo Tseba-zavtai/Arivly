@@ -2,6 +2,7 @@ import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { beginDanFlow, captureDanCallback, waitForDanCallback, endDanFlow } from '@/lib/danPending';
 
 const DAN_CALLBACK_URL = "tureesly://dan-callback";
 
@@ -37,10 +38,16 @@ function callbackParam(url: string, key: string) {
  * Client ID / Secret болон регистрийн дугаар энэ код руу огт орж ирдэггүй.
  */
 export async function authenticateWithDan(mode: DanMode, options?: { termsAccepted?: boolean }) {
+  beginDanFlow();
+  let subscription: { remove(): void } | undefined;
+  let popup: Window | null = null;
   const windowName = 'arivly-dan-auth';
-  const popup = Platform.OS === 'web' ? window.open('about:blank', windowName) : null;
-  if (Platform.OS === 'web' && !popup) throw new Error('DAN цонх нээгдсэнгүй. Дахин оролдоно уу.');
   try {
+  popup = Platform.OS === 'web' ? window.open('about:blank', windowName) : null;
+  if (Platform.OS === 'web' && !popup) throw new Error('DAN цонх нээгдсэнгүй. Browser-ийн popup зөвшөөрлийг нээгээд дахин оролдоно уу.');
+  if (Platform.OS !== 'web') subscription = Linking.addEventListener('url', ({ url }) => {
+    if (/^tureesly:\/\/dan-callback(?:[/?#]|$)/i.test(url)) captureDanCallback(url);
+  });
   const { data: startData, error: startError } = await supabase.functions.invoke<StartResponse>(
     "dan-auth-start",
     { body: { mode, termsAccepted: options?.termsAccepted === true, ...(Platform.OS === 'web' && { webOrigin: window.location.origin }) } },
@@ -60,6 +67,9 @@ export async function authenticateWithDan(mode: DanMode, options?: { termsAccept
   );
 
   if (browserResult.type !== "success") {
+    // Android can report resume/cancel just before delivering the deep link.
+    const callback = Platform.OS !== 'web' ? await waitForDanCallback() : null;
+    if (callback) return await completeDanCallback(callback);
     if (browserResult.type === "cancel" || browserResult.type === "dismiss") {
       throw new Error("DAN нэвтрэх цуцлагдсан байна.");
     }
@@ -69,7 +79,24 @@ export async function authenticateWithDan(mode: DanMode, options?: { termsAccept
     );
   }
 
-  const errorCode = callbackParam(browserResult.url, "error");
+  return await completeDanCallback(browserResult.url);
+  } finally {
+    subscription?.remove();
+    endDanFlow();
+    if (popup && !popup.closed) popup.close();
+  }
+}
+// Native route and browser can receive the same one-use handoff concurrently.
+let lastCallback: { key: string; result: Promise<{ userId: string; linked: boolean }> } | undefined;
+export function completeDanCallback(url: string) {
+  const key = callbackParam(url, 'handoff') || url;
+  if (lastCallback?.key === key) return lastCallback.result;
+  const result = redeemDanCallback(url);
+  lastCallback = { key, result };
+  return result;
+}
+async function redeemDanCallback(url: string) {
+  const errorCode = callbackParam(url, "error");
   if (errorCode) {
     if (errorCode === "identity_already_linked") {
       throw new Error("Энэ DAN иргэн өөр хэрэглэгчийн бүртгэлтэй холбогдсон байна.");
@@ -83,7 +110,7 @@ export async function authenticateWithDan(mode: DanMode, options?: { termsAccept
     throw new Error("DAN нэвтрэх амжилтгүй боллоо. Дахин оролдоно уу.");
   }
 
-  const handoff = callbackParam(browserResult.url, "handoff");
+  const handoff = callbackParam(url, "handoff");
   if (!handoff) {
     throw new Error("DAN нэвтрэх хариу дутуу байна. Дахин оролдоно уу.");
   }
@@ -108,12 +135,10 @@ export async function authenticateWithDan(mode: DanMode, options?: { termsAccept
 
   return {
     userId: verified.user.id,
-    linked: callbackParam(browserResult.url, "linked") === "1",
+    linked: callbackParam(url, "linked") === "1",
   };
-  } finally {
-    if (popup && !popup.closed) popup.close();
-  }
 }
+
 export async function finishDanSignUp(phone: string, password: string) {
   const { data, error } = await supabase.functions.invoke<FinishSignupResponse>(
     "dan-auth-finish-signup",

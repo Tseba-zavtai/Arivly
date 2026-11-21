@@ -584,7 +584,7 @@ export const [JobsContext, useJobs] = createContextHook(() => {
         .eq("user_id", ownerId)
         .eq("type", "rental_request")
         .eq("is_read", false)
-        .in("reference_id", requestIds);
+        .in("related_id", requestIds);
 
       if (error) throw error;
       const nextCount = count ?? 0;
@@ -617,7 +617,7 @@ export const [JobsContext, useJobs] = createContextHook(() => {
         .eq("user_id", ownerId)
         .eq("type", "rental_request")
         .eq("is_read", false)
-        .in("reference_id", requestIds);
+        .in("related_id", requestIds);
       if (error) throw error;
 
       await syncUnreadRentalRequestNotificationCount(requests, ownerId);

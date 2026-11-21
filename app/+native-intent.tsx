@@ -1,9 +1,13 @@
+import { captureDanCallback } from '@/lib/danPending';
+
 export function redirectSystemPath({
   path,
   initial,
 }: { path: string; initial: boolean }) {
-  // The browser callback is consumed by openAuthSessionAsync. Keep the router
-  // on authentication while it verifies the handoff, never flash the feed.
-  if (/^(?:tureesly:\/\/)?\/?dan-callback(?:[/?#]|$)/i.test(path)) return '/auth';
+  // Preserve the one-use callback for warm and cold app starts.
+  if (/^(?:tureesly:\/\/)?\/?dan-callback(?:[/?#]|$)/i.test(path)) {
+    if (captureDanCallback(path)) return '/auth';
+    return path.replace(/^(?:tureesly:\/\/)?\/?dan-callback/i, '/dan-callback');
+  }
   return '/';
 }

@@ -411,20 +411,6 @@ export default function JobDetailScreen() {
       }
 
       if (requestData) {
-        const { error: inAppNotificationError } = await supabase.from("notifications").insert([
-          {
-            user_id: requestData.owner_id,
-            title: "Шинэ түрээсийн хүсэлт",
-            content: `${user?.name || "Хэрэглэгч"} таны ${job.title || "бараа"}-г түрээслэх хүсэлт илгээлээ.`,
-            is_read: false,
-            type: "rental_request",
-            reference_id: requestData.id
-          }
-        ]);
-        if (inAppNotificationError) {
-          console.log("IN-APP NOTIFICATION ERROR:", inAppNotificationError);
-        }
-
         const { error: pushNotificationError } = await supabase.functions.invoke(
           "send-rental-request-push",
           { body: { rentalRequestId: requestData.id } },

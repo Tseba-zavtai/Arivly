@@ -8,7 +8,7 @@ function load(os) {
   let options;
   const exports = {};
   const modules = {
-    'expo-linking': {},
+    'expo-linking': { addEventListener: () => ({ remove() {} }) },
     'react-native': { Platform: { OS: os } },
     'expo-web-browser': { openAuthSessionAsync: async (url, callback, params) => {
       assert.equal(url, 'https://sso.gov.mn/synthetic');
@@ -20,7 +20,7 @@ function load(os) {
   };
   const source = fs.readFileSync('lib/danAuth.ts', 'utf8');
   const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-  vm.runInNewContext(js, { exports, require: name => modules[name] });
+  vm.runInNewContext(js, { exports, require: name => name === '@/lib/danPending' ? { beginDanFlow() {}, endDanFlow() {}, captureDanCallback() {}, waitForDanCallback: async () => null } : modules[name] });
   return { run: () => exports.authenticateWithDan('sign_up'), options: () => options };
 }
 
@@ -43,7 +43,7 @@ test('web reserves the popup before waiting for the DAN server', async () => {
   const popup={closed:false,close(){this.closed=true;}};
   const exports={};
   const modules={
-    'expo-linking':{},
+    'expo-linking':{addEventListener:()=>({remove(){}})},
     'react-native':{Platform:{OS:'web'}},
     'expo-web-browser':{openAuthSessionAsync:async(url,callback,options)=>{
       assert.equal(callback,'https://arivly.mn/dan-callback.html');
@@ -57,7 +57,7 @@ test('web reserves the popup before waiting for the DAN server', async () => {
     }}}}
   };
   const source=ts.transpileModule(fs.readFileSync('lib/danAuth.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
-  vm.runInNewContext(source,{exports,require:name=>modules[name],window:{location:{origin:'https://arivly.mn'},open(){opened=true;return popup;}}});
+  vm.runInNewContext(source,{exports,require:name=>name === '@/lib/danPending' ? { beginDanFlow() {}, endDanFlow() {}, captureDanCallback() {}, waitForDanCallback: async () => null } : modules[name],window:{location:{origin:'https://arivly.mn'},open(){opened=true;return popup;}}});
   await assert.rejects(exports.authenticateWithDan('sign_up'),/цуцлагдсан/);
   assert.equal(popup.closed,true);
 });

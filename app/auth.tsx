@@ -85,7 +85,7 @@ export default function AuthScreen() {
     void fetchTermsFromDB();
   }, [fetchTermsFromDB]);
 
-  const normalizePhone8 = (raw: string) => raw.replace(/\D/g, "").slice(0, 8);
+  const normalizePhone8 = (raw: string) => { const digits = raw.replace(/\D/g, ""); return (digits.length === 11 && digits.startsWith("976") ? digits.slice(3) : digits).slice(0, 8); };
   const formatPhoneForAuth = (rawPhone: string) => `+976${normalizePhone8(rawPhone)}`;
 
   const resetFormState = () => {
@@ -263,7 +263,7 @@ export default function AuthScreen() {
           value={phone}
           onChangeText={(text) => setPhone(normalizePhone8(text))}
           keyboardType="number-pad"
-          maxLength={8}
+          maxLength={16}
           textContentType="telephoneNumber"
         />
       </View>
@@ -475,6 +475,7 @@ export default function AuthScreen() {
               </View>
             ) : (
               <View style={{ gap: 14 }}>
+                {!termsReady && <TouchableOpacity onPress={() => void fetchTermsFromDB()}><Text style={{ color: colors.primary, paddingVertical: 12 }}>Нөхцөлийг дахин ачаалах</Text></TouchableOpacity>}
                 {(termsText || "Үйлчилгээний нөхцөл олдсонгүй.").split(/\n\s*\n/).map((paragraph, index) => (
                   <Text key={index} selectable style={[styles.termsParagraph, { color: colors.text }]}>{paragraph}</Text>
                 ))}

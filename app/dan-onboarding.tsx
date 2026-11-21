@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import Constants from "expo-constants";
 
-const normalizePhone = (value: string) => value.replace(/\D/g, "").slice(0, 8);
+const normalizePhone = (value: string) => { const digits = value.replace(/\D/g, ""); return (digits.length === 11 && digits.startsWith("976") ? digits.slice(3) : digits).slice(0, 8); };
 
 export default function DanOnboardingScreen() {
   const router = useRouter();
@@ -82,7 +82,7 @@ export default function DanOnboardingScreen() {
                   value={phone}
                   onChangeText={(value) => setPhone(normalizePhone(value))}
                   keyboardType="number-pad"
-                  maxLength={8}
+                  maxLength={16}
                   placeholder="9999 9999"
                   placeholderTextColor={colors.textSecondary}
                   style={[styles.phoneInput, { color: colors.text }]}

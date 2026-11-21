@@ -16,13 +16,7 @@ async function run(ticket){
  const result=await handler(new Request('https://test.invalid',{method:'POST',headers:{Authorization:'Bearer test'},body:JSON.stringify({rentalRequestId:'request'})}));
  return {status:result.status,body:await result.json()};
 }
-test('push accepts single and array tickets',async()=>{
- for(const data of [{status:'ok',id:'ticket'},[{status:'ok',id:'ticket'}]]){
- const r=await run({data});assert.equal(r.status,200);assert.equal(r.body.ticketId,'ticket');
- }
-});
-test('push rejects error and missing tickets instead of reporting success',async()=>{
- for(const data of [{status:'error',message:'Device not registered'},null,{status:'ok'}]){
- const r=await run({data});assert.equal(r.status,502);assert.notEqual(r.body.delivered,true);
- }
+test('legacy client request acknowledges queue without duplicate direct push',async()=>{
+ const r=await run({data:{status:'ok',id:'ticket'}});
+ assert.equal(r.status,200);assert.equal(r.body.queued,true);assert.equal(r.body.delivered,false);
 });

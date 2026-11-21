@@ -2,7 +2,7 @@
   "expo": {
     "name": "Arivly",
     "slug": "tureestei1",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tureesly",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "mn.tureestei.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Ойр байгаа заруудыг харуулахын тулд байршил ашиглана.",
         "NSCameraUsageDescription": "Зургаа авах болон зар оруулах үед камер ашиглана.",
@@ -30,7 +30,7 @@
     "android": {
       "package": "mn.tureestei.app",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 1,
+      "versionCode": 27,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#6E0AB0"

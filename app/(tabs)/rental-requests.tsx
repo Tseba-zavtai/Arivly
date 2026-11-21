@@ -140,7 +140,7 @@ export default function RentalRequestsScreen() {
       await supabase
         .from("notifications")
         .update({ is_read: true })
-        .eq("reference_id", requestId)
+        .eq("related_id", requestId)
         .eq("user_id", user.id);
     } catch (err) {
       console.log("Notification update error:", err);

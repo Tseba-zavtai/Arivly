@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase, verifyPasswordWithoutChangingSession } from "@/lib/supabase";
 import { authenticateWithDan, finishDanSignUp } from "@/lib/danAuth";
+import { removePushDevice } from '@/lib/pushDevice';
 
 const USER_STORAGE_KEY = "@user_data";
 
@@ -132,7 +133,7 @@ export const [AuthContext, useAuth] = createContextHook(() => {
       // Reset only the monthly free allowance when a new month begins. Paid
       // credits are tracked separately and never get overwritten by this call.
       // Missing RPC on an older backend must not block sign-in.
-      const monthlyCreditResult = await supabase.rpc("refresh_post_credit_balance");
+      const monthlyCreditResult = await supabase.rpc("refresh_post_credit_balance").then(result => result, () => ({ error: { code: 'NETWORK', message: 'Credit refresh unavailable' } }));
       if (monthlyCreditResult.error && monthlyCreditResult.error.code !== "PGRST202") {
         console.warn("MONTHLY POST CREDIT REFRESH ERROR:", monthlyCreditResult.error.message);
       }
@@ -164,18 +165,17 @@ export const [AuthContext, useAuth] = createContextHook(() => {
 
       const { data, error } = await loadProfile();
       if (error || !data) {
-        if (normalizedFallbackPhone) {
-          const upsertRes = await supabase.from("users").upsert(
+        if (normalizedFallbackPhone && error?.code === 'PGRST116') {
+          const upsertRes = await supabase.from("users").insert(
             {
               id: uid,
               phone: normalizedFallbackPhone,
               // New fallback profile also receives its initial two listing credits.
               available_post_credits: 2,
-            },
-            { onConflict: "id" }
+            }
           );
 
-          if (upsertRes.error) {
+          if (upsertRes.error && upsertRes.error.code !== '23505') {
             throw upsertRes.error;
           }
         }
@@ -216,7 +216,7 @@ export const [AuthContext, useAuth] = createContextHook(() => {
     await supabase
       .from("users")
       .update({ last_active_at: new Date().toISOString() })
-      .eq("id", uid);
+      .eq("id", uid).then(() => {}, () => {});
   }, []);
 
   useEffect(() => {
@@ -548,6 +548,7 @@ export const [AuthContext, useAuth] = createContextHook(() => {
   }, [clearLocalAuthState]);
 
   const logout = useCallback(async () => {
+    await removePushDevice().catch(() => {});
     await supabase.auth.signOut();
     await clearLocalAuthState();
   }, [clearLocalAuthState]);

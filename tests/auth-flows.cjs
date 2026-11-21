@@ -90,12 +90,12 @@ test('DAN signup establishes a fresh password session instead of refreshing revo
   assert.deepEqual(JSON.parse(JSON.stringify(calls)), ['test-id', 'finish', { email: 'u97699112233@example.com', password: 'synthetic-password' }, 'test-id', 'active']);
 });
 
-test('DAN browser return stays on auth rather than opening the home feed', () => {
+test('DAN browser return preserves callback credentials for warm and cold starts', () => {
   const source = fs.readFileSync('app/+native-intent.tsx', 'utf8');
   const exports = {};
-  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports });
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports, require: () => ({ captureDanCallback: () => false }) });
   for (const path of ['tureesly://dan-callback?handoff=test', '/dan-callback?error=test']) {
-    assert.equal(exports.redirectSystemPath({ path, initial: false }), '/auth');
+    for (const initial of [false, true]) assert.equal(exports.redirectSystemPath({ path, initial }), path.replace('tureesly://', '/'));
   }
   assert.equal(exports.redirectSystemPath({ path: 'other', initial: false }), '/');
 });

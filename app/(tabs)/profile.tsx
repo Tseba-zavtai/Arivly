@@ -38,8 +38,8 @@ import {
 } from "lucide-react-native";
 import { useFocusEffect, useRootNavigationState, useRouter } from "expo-router";
 import Constants from "expo-constants";
-import { ANDROID_BUILD_DATE } from "@/constants/release";
-import { nativeApplicationVersion } from "expo-application";
+import { RELEASE_BUILD_DATE } from "@/constants/release";
+import { nativeApplicationVersion, nativeBuildVersion } from "expo-application";
 import { useJobs } from "@/contexts/JobsContext";
 import { useCallback, useMemo, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -83,10 +83,10 @@ export default function ProfileScreen() {
   } = useAuth() as any;
   const { colors } = useTheme();
   const { isAppLockEnabled, setAppLockEnabled } = useAppLock();
-  const appVersion = Platform.OS === "android"
+  const appVersion = Platform.OS !== "web"
     ? nativeApplicationVersion ?? Constants.expoConfig?.version ?? "1.0.0"
     : Constants.expoConfig?.version ?? "1.0.0";
-  const buildLabel = Platform.OS === "android" ? ` (${ANDROID_BUILD_DATE})` : "";
+  const buildLabel = Platform.OS !== "web" && nativeBuildVersion ? ` (build ${nativeBuildVersion})` : "";
 
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [contactPhoneModalVisible, setContactPhoneModalVisible] = useState(false);
@@ -602,6 +602,7 @@ export default function ProfileScreen() {
           onPress={() => router.push("/release-notes" as any)}
         >
           <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '700' }}>Хувилбар {appVersion}{buildLabel}</Text>
+          <Text style={{ marginTop: 4, fontSize: 12, color: colors.textSecondary }}>Хувилбарын огноо: {RELEASE_BUILD_DATE}</Text>
           <Text style={{ marginTop: 3, fontSize: 12, color: colors.primary, fontWeight: '600' }}>Шинэчлэлийн мэдээлэл харах</Text>
         </TouchableOpacity>
         <View style={styles.bottomPadding} />

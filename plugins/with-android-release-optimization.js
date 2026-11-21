@@ -16,10 +16,12 @@ module.exports = function withAndroidReleaseOptimization(config) {
   });
 
   return withAppBuildGradle(config, mod => {
-    // Expo's default file disables R8 optimization even when minification is on.
+    // Keep Expo SDK 54's conservative preset. Aggressive R8 optimization can
+    // break Kotlin reflection used to convert Expo Record options (including
+    // OpenBrowserOptions when opening DAN). Shrinking remains enabled above.
     mod.modResults.contents = mod.modResults.contents.replace(
-      /getDefaultProguardFile\((['"])proguard-android\.txt\1\)/,
-      'getDefaultProguardFile("proguard-android-optimize.txt")',
+      /getDefaultProguardFile\((['"])proguard-android-optimize\.txt\1\)/,
+      'getDefaultProguardFile("proguard-android.txt")',
     );
     return mod;
   });
